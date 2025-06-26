@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Tax Information Input - AI Tax Agent{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <h2>Enter Your Tax Information</h2>
+        <p class="subtitle">Please provide accurate information for tax calculation</p>
+        
+        {% if errors %}
+        <div class="error-container">
+            <h3>Please correct the following errors:</h3>
+            <ul>
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <form method="POST" action="{{ url_for('calculate_tax') }}" class="tax-form">
+            <div class="form-section">
+                <h3>Personal Information</h3>
+                
+                <div class="form-group">
+                    <label for="filing_status">Filing Status *</label>
+                    <select name="filing_status" id="filing_status" required>
+                        <option value="">Select Filing Status</option>
+                        <option value="single" {% if form_data and form_data.filing_status == 'single' %}selected{% endif %}>Single</option>
+                        <option value="married_joint" {% if form_data and form_data.filing_status == 'married_joint' %}selected{% endif %}>Married Filing Jointly</option>
+                        <option value="married_separate" {% if form_data and form_data.filing_status == 'married_separate' %}selected{% endif %}>Married Filing Separately</option>
+                        <option value="head_of_household" {% if form_data and form_data.filing_status == 'head_of_household' %}selected{% endif %}>Head of Household</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="age">Age *</label>
+                    <input type="number" name="age" id="age" min="18" max="120" 
+                           value="{{ form_data.age if form_data else '' }}" required>
+                    <small>Used to determine additional standard deduction for seniors (65+)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dependents">Number of Dependents</label>
+                    <input type="number" name="dependents" id="dependents" min="0" max="20" 
+                           value="{{ form_data.dependents if form_data else '0' }}">
+                    <small>Children or other dependents (affects child tax credit)</small>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Income Information</h3>
+                
+                <div class="form-group">
+                    <label for="income">Annual Gross Income *</label>
+                    <input type="number" name="income" id="income" step="0.01" min="0" 
+                           data-currency="true" value="{{ form_data.income if form_data else '' }}" required>
+                    <small>Total income from all sources (wages, interest, etc.)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="withholding">Federal Tax Withheld</label>
+                    <input type="number" name="withholding" id="withholding" step="0.01" min="0" 
+                           data-currency="true" value="{{ form_data.withholding if form_data else '0' }}">
+                    <small>Amount withheld from paychecks (found on W-2 form)</small>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Deductions</h3>
+                
+                <div class="form-group">
+                    <label for="itemized_deductions">Itemized Deductions (Optional)</label>
+                    <input type="number" name="itemized_deductions" id="itemized_deductions" 
+                           step="0.01" min="0" data-currency="true" 
+                           value="{{ form_data.itemized_deductions if form_data else '0' }}">
+                    <small>Leave as 0 to use standard deduction (recommended for most taxpayers)</small>
+                </div>
+                
+                <div class="deduction-info">
+                    <h4>Standard Deduction Amounts (2023):</h4>
+                    <ul>
+                        <li>Single: $13,850</li>
+                        <li>Married Filing Jointly: $27,700</li>
+                        <li>Married Filing Separately: $13,850</li>
+                        <li>Head of Household: $20,800</li>
+                    </ul>
+                    <p><small>Additional amounts apply for taxpayers 65 or older</small></p>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Calculate My Tax Return</button>
+                <button type="reset" class="btn-secondary">Clear Form</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

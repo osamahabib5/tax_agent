@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Tax Return Agent{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <h1 class="nav-title">🤖 AI Tax Agent</h1>
+                <div class="nav-links">
+                    <a href="{{ url_for('index') }}">New Return</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 AI Tax Return Agent - Prototype Version</p>
+            <p><small>This is a prototype for educational purposes only. Consult a tax professional for actual tax preparation.</small></p>
+        </div>
+    </footer>
+    
+    <script>
+        // Basic form validation and user experience enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Format currency inputs
+            const currencyInputs = document.querySelectorAll('input[data-currency]');
+            currencyInputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value) {
+                        const value = parseFloat(this.value.replace(/[^0-9.-]+/g, ""));
+                        if (!isNaN(value)) {
+                            this.value = value.toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        }
+                    }
+                });
+                
+                input.addEventListener('focus', function() {
+                    this.value = this.value.replace(/[^0-9.-]+/g, "");
+                });
+            });
+        });
+    </script>
+</body>
+</html>

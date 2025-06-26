@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Tax Return Form - AI Tax Agent{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="tax-form-container">
+        <div class="form-header">
+            <h1>U.S. Individual Income Tax Return (Simplified)</h1>
+            <div class="tax-year">Tax Year {{ current_year - 1 }}</div>
+        </div>
+        
+        <div class="form-content">
+            <!-- Personal Information Section -->
+            <section class="form-section">
+                <h2>Personal Information</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Filing Status:</label>
+                        <span class="field-value">{{ user_data.filing_status.replace('_', ' ').title() }}</span>
+                    </div>
+                    <div class="form-field">
+                        <label>Age:</label>
+                        <span class="field-value">{{ user_data.age }}</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Number of Dependents:</label>
+                        <span class="field-value">{{ user_data.dependents }}</span>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Income Section -->
+            <section class="form-section">
+                <h2>Income</h2>
+                <div class="form-line">
+                    <span class="line-number">1.</span>
+                    <span class="line-description">Total Income</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.gross_income) }}</span>
+                </div>
+            </section>
+            
+            <!-- Deductions Section -->
+            <section class="form-section">
+                <h2>Deductions</h2>
+                <div class="form-line">
+                    <span class="line-number">2a.</span>
+                    <span class="line-description">Standard Deduction</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.standard_deduction) }}</span>
+                </div>
+                <div class="form-line">
+                    <span class="line-number">2b.</span>
+                    <span class="line-description">Itemized Deductions</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.itemized_deductions) }}</span>
+                </div>
+                <div class="form-line total-line">
+                    <span class="line-number">3.</span>
+                    <span class="line-description">Total Deductions (greater of 2a or 2b)</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.total_deductions) }}</span>
+                </div>
+                <div class="form-line total-line">
+                    <span class="line-number">4.</span>
+                    <span class="line-description">Taxable Income (Line 1 minus Line 3)</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.taxable_income) }}</span>
+                </div>
+            </section>
+            
+            <!-- Tax Calculation Section -->
+            <section class="form-section">
+                <h2>Tax Calculation</h2>
+                <div class="form-line">
+                    <span class="line-number">5.</span>
+                    <span class="line-description">Tax on Taxable Income</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.federal_tax_before_credits) }}</span>
+                </div>
+                {% if tax_result.child_tax_credit > 0 %}
+                <div class="form-line">
+                    <span class="line-number">6.</span>
+                    <span class="line-description">Child Tax Credit</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.child_tax_credit) }}</span>
+                </div>
+                <div class="form-line total-line">
+                    <span class="line-number">7.</span>
+                    <span class="line-description">Total Tax After Credits (Line 5 minus Line 6)</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.tax_owed) }}</span>
+                </div>
+                {% else %}
+                <div class="form-line total-line">
+                    <span class="line-number">7.</span>
+                    <span class="line-description">Total Tax After Credits</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.tax_owed) }}</span>
+                </div>
+                {% endif %}
+            </section>
+            
+            <!-- Payments Section -->
+            <section class="form-section">
+                <h2>Payments</h2>
+                <div class="form-line">
+                    <span class="line-number">8.</span>
+                    <span class="line-description">Federal Income Tax Withheld</span>
+                    <span class="line-amount">${{ "%.2f"|format(user_data.withholding) }}</span>
+                </div>
+            </section>
+            
+            <!-- Final Calculation Section -->
+            <section class="form-section final-section">
+                {% if tax_result.refund_or_owe > 0 %}
+                <div class="form-line refund-line">
+                    <span class="line-number">9.</span>
+                    <span class="line-description">REFUND (Line 8 minus Line 7)</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.refund_or_owe) }}</span>
+                </div>
+                {% else %}
+                <div class="form-line owe-line">
+                    <span class="line-number">9.</span>
+                    <span class="line-description">AMOUNT YOU OWE (Line 7 minus Line 8)</span>
+                    <span class="line-amount">${{ "%.2f"|format(tax_result.refund_or_owe|abs) }}</span>
+                </div>
+                {% endif %}
+            </section>
+            
+            <!-- Tax Rate Information -->
+            <section class="form-section">
+                <h2>Tax Rate Information</h2>
+                <div class="rate-info">
+                    <div class="rate-item">
+                        <span>Effective Tax Rate:</span>
+                        <span>{{ tax_result.effective_tax_rate }}%</span>
+                    </div>
+                    <div class="rate-item">
+                        <span>Marginal Tax Rate:</span>
+                        <span>{{ tax_result.marginal_tax_rate }}%</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Form Footer -->
+        <div class="form-footer">
+            <p>Generated by AI Tax Return Agent on {{ moment().format('MMMM DD, YYYY') }}</p>
+            <p><strong>PROTOTYPE VERSION - FOR EDUCATIONAL PURPOSES ONLY</strong></p>
+        </div>
+        
+        <!-- Print/Download Actions -->
+        <div class="form-actions no-print">
+            <button onclick="window.print()" class="btn-primary">🖨️ Print Form</button>
+            <a href="{{ url_for('download_form') }}" class="btn-secondary">💾 Download as Text</a>
+            <a href="{{ url_for('index') }}" class="btn-outline">🔄 New Return</a>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .tax-form-container { margin: 0; padding: 20px; }
+    body { font-size: 12px; }
+    .form-section { page-break-inside: avoid; }
+    .final-section { 
+        border: 2px solid #000; 
+        padding: 15px; 
+        margin-top: 20px; 
+    }
+}
+</style>
+{% endblock %}

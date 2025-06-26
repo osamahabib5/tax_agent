@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Tax Calculation Results - AI Tax Agent{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="results-container">
+        <h2>Your Tax Calculation Results</h2>
+        
+        <!-- Summary Card -->
+        <div class="result-summary">
+            {% if tax_result.refund_or_owe > 0 %}
+            <div class="result-card refund">
+                <div class="result-icon">💰</div>
+                <div class="result-content">
+                    <h3>Congratulations!</h3>
+                    <p class="result-amount">${{ "%.2f"|format(tax_result.refund_or_owe) }}</p>
+                    <p class="result-label">Refund Expected</p>
+                </div>
+            </div>
+            {% else %}
+            <div class="result-card owe">
+                <div class="result-icon">📄</div>
+                <div class="result-content">
+                    <h3>Amount Due</h3>
+                    <p class="result-amount">${{ "%.2f"|format(tax_result.refund_or_owe|abs) }}</p>
+                    <p class="result-label">Tax Owed</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Detailed Breakdown -->
+        <div class="details-container">
+            <h3>Detailed Tax Breakdown</h3>
+            
+            <div class="detail-sections">
+                <div class="detail-section">
+                    <h4>Income Summary</h4>
+                    <div class="detail-item">
+                        <span>Gross Income:</span>
+                        <span>${{ "%.2f"|format(tax_result.gross_income) }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Total Deductions:</span>
+                        <span>${{ "%.2f"|format(tax_result.total_deductions) }}</span>
+                    </div>
+                    <div class="detail-item highlight">
+                        <span>Taxable Income:</span>
+                        <span>${{ "%.2f"|format(tax_result.taxable_income) }}</span>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>Tax Calculation</h4>
+                    <div class="detail-item">
+                        <span>Federal Tax Before Credits:</span>
+                        <span>${{ "%.2f"|format(tax_result.federal_tax_before_credits) }}</span>
+                    </div>
+                    {% if tax_result.child_tax_credit > 0 %}
+                    <div class="detail-item">
+                        <span>Child Tax Credit:</span>
+                        <span>-${{ "%.2f"|format(tax_result.child_tax_credit) }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="detail-item highlight">
+                        <span>Total Tax Owed:</span>
+                        <span>${{ "%.2f"|format(tax_result.tax_owed) }}</span>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>Payment Summary</h4>
+                    <div class="detail-item">
+                        <span>Tax Withheld:</span>
+                        <span>${{ "%.2f"|format(tax_result.withholding) }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Tax Owed:</span>
+                        <span>${{ "%.2f"|format(tax_result.tax_owed) }}</span>
+                    </div>
+                    <div class="detail-item highlight">
+                        {% if tax_result.refund_or_owe > 0 %}
+                        <span>Refund:</span>
+                        <span>${{ "%.2f"|format(tax_result.refund_or_owe) }}</span>
+                        {% else %}
+                        <span>Amount Due:</span>
+                        <span>${{ "%.2f"|format(tax_result.refund_or_owe|abs) }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tax Rates Info -->
+        <div class="tax-rates">
+            <h3>Your Tax Rates</h3>
+            <div class="rate-item">
+                <span>Effective Tax Rate:</span>
+                <span>{{ tax_result.effective_tax_rate }}%</span>
+            </div>
+            <div class="rate-item">
+                <span>Marginal Tax Rate:</span>
+                <span>{{ tax_result.marginal_tax_rate }}%</span>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{{ url_for('generate_tax_form') }}" class="btn-primary">
+                📋 View Tax Form
+            </a>
+            <a href="{{ url_for('download_form') }}" class="btn-secondary">
+                💾 Download Form
+            </a>
+            <a href="{{ url_for('index') }}" class="btn-outline">
+                🔄 Calculate Another Return
+            </a>
+        </div>
+        
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            <h4>Important Notice</h4>
+            <p>This calculation is based on simplified tax rules and is for educational purposes only. 
+               Actual tax calculations may be more complex and should be verified by a qualified tax professional. 
+               This tool does not constitute professional tax advice.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
