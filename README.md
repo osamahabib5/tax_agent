@@ -26,4 +26,17 @@ A comprehensive prototype of an AI-powered tax return preparation system built w
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd tax_agent
+   cd tax_agent_code
+   ```
+   2. **Create virtual environment**
+python -m venv venv
+source venv/bin/activate 
+
+# On Windows: 
+source venv/Scripts/activate
+
+   3. **Install Dependencies**
+   pip install -r requirements.txt
+
+4. **Run the application**
+python app.py
