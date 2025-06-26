@@ -3,7 +3,6 @@
 {% block title %}Tax Information Input - AI Tax Agent{% endblock %}
 
 {% block content %}
-
 <div class="container">
     <div class="form-container">
         <h2>Enter Your Tax Information</h2>
@@ -37,43 +36,20 @@
                 
                 <div class="form-group">
                     <label for="age">Age *</label>
-                    <input type="number" name="age" id="age" min="18" max="120" 
-                           value="{{ form_data.age if form_data else '' }}" required>
+                    <input type="number" name="age" id="age" min="18" max="120" step="1"
+                           value="{{ form_data.age if form_data else '' }}" required
+                           placeholder="Enter your age">
                     <small>Used to determine additional standard deduction for seniors (65+)</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="dependents">Number of Dependents</label>
-                    <input type="number" name="dependents" id="dependents" min="0" max="20" 
-                           value="{{ form_data.dependents if form_data else '0' }}">
-                    <small>Children or other dependents (affects child tax credit)</small>
+                    <input type="number" name="dependents" id="dependents" min="0" max="20" step="1"
+                           value="{{ form_data.dependents if form_data else '0' }}"
+                           placeholder="Enter number of dependents">
+                    <small id="dependents-help">Children or other dependents (affects child tax credit)</small>
                 </div>
             </div>
-
-            <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const filingStatusSelect = document.getElementById('filing_status');
-                const dependentsInput = document.getElementById('dependents');
-                
-                function validateDependents() {
-                    const filingStatus = filingStatusSelect.value;
-                    const dependents = parseInt(dependentsInput.value) || 0;
-                    
-                    // Clear any existing custom validity
-                    dependentsInput.setCustomValidity('');
-                    
-                    if (filingStatus === 'single' && dependents > 1) {
-                        dependentsInput.setCustomValidity('Single filers can have a maximum of 1 dependent');
-                    } else if (filingStatus === 'head_of_household' && dependents === 0) {
-                        dependentsInput.setCustomValidity('Head of Household filing status requires at least 1 dependent');
-                    }
-                }
-                
-                // Add event listeners
-                filingStatusSelect.addEventListener('change', validateDependents);
-                dependentsInput.addEventListener('input', validateDependents);
-            });
-            </script>
             
             <div class="form-section">
                 <h3>Income Information</h3>
@@ -81,14 +57,16 @@
                 <div class="form-group">
                     <label for="income">Annual Gross Income *</label>
                     <input type="number" name="income" id="income" step="0.01" min="0" 
-                           value="{{ form_data.income if form_data else '' }}" required>
+                           value="{{ form_data.income if form_data else '' }}" required
+                           placeholder="Enter your annual income">
                     <small>Total income from all sources (wages, interest, etc.)</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="withholding">Federal Tax Withheld</label>
                     <input type="number" name="withholding" id="withholding" step="0.01" min="0" 
-                        value="{{ form_data.withholding if form_data else '0' }}">
+                           value="{{ form_data.withholding if form_data else '0' }}"
+                           placeholder="Enter tax withheld">
                     <small>Amount withheld from paychecks (found on W-2 form)</small>
                 </div>
             </div>
@@ -99,8 +77,9 @@
                 <div class="form-group">
                     <label for="itemized_deductions">Itemized Deductions (Optional)</label>
                     <input type="number" name="itemized_deductions" id="itemized_deductions" 
-                           step="0.01" min="0" data-currency="true" 
-                           value="{{ form_data.itemized_deductions if form_data else '0' }}">
+                           step="0.01" min="0" 
+                           value="{{ form_data.itemized_deductions if form_data else '0' }}"
+                           placeholder="Enter itemized deductions">
                     <small>Leave as 0 to use standard deduction (recommended for most taxpayers)</small>
                 </div>
                 
@@ -117,10 +96,272 @@
             </div>
             
             <div class="form-actions">
-                <button type="submit" class="btn-primary">Calculate My Tax Return</button>
-                <button type="reset" class="btn-secondary">Clear Form</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-calculator"></i> Calculate My Tax Return
+                </button>
+                <button type="reset" class="btn-secondary">
+                    <i class="fas fa-undo"></i> Clear Form
+                </button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+// Fixed form validation - ensures integer values are properly handled
+document.addEventListener('DOMContentLoaded', function() {
+    const filingStatusSelect = document.getElementById('filing_status');
+    const dependentsInput = document.getElementById('dependents');
+    const ageInput = document.getElementById('age');
+    const dependentsHelp = document.getElementById('dependents-help');
+    
+    // Enhanced integer validation that ensures proper values
+    function enforceIntegerInput(input) {
+        input.addEventListener('input', function() {
+            // Remove any non-numeric characters
+            let value = this.value.replace(/[^0-9]/g, '');
+            this.value = value;
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            // Allow: backspace, delete, tab, escape, enter
+            if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+                // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true) ||
+                // Allow: home, end, left, right, down, up
+                (e.keyCode >= 35 && e.keyCode <= 40)) {
+                return;
+            }
+            // Ensure that it is a number and stop the keypress
+            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+        
+        // Ensure value is within bounds when user finishes input
+        input.addEventListener('blur', function() {
+            if (this.value) {
+                const min = parseInt(this.getAttribute('min')) || 0;
+                const max = parseInt(this.getAttribute('max')) || 999;
+                let value = parseInt(this.value) || min;
+                
+                if (value < min) {
+                    this.value = min;
+                    showToast(`Minimum value is ${min}`, 'warning');
+                } else if (value > max) {
+                    this.value = max;
+                    showToast(`Maximum value is ${max}`, 'warning');
+                } else {
+                    // Ensure the value is a clean integer
+                    this.value = value.toString();
+                }
+            }
+        });
+        
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            const cleanValue = paste.replace(/[^0-9]/g, '');
+            if (cleanValue) {
+                this.value = cleanValue;
+                this.blur(); // Trigger validation
+                this.focus();
+            }
+        });
+    }
+    
+    // Apply integer enforcement
+    if (ageInput) {
+        enforceIntegerInput(ageInput);
+        
+        // Additional age-specific validation
+        ageInput.addEventListener('blur', function() {
+            if (this.value) {
+                const age = parseInt(this.value);
+                if (age >= 18 && age <= 120) {
+                    this.classList.remove('invalid');
+                    this.classList.add('valid');
+                } else {
+                    this.classList.remove('valid');
+                    this.classList.add('invalid');
+                }
+            }
+        });
+    }
+    
+    if (dependentsInput) {
+        enforceIntegerInput(dependentsInput);
+        
+        // Additional dependents-specific validation
+        dependentsInput.addEventListener('blur', function() {
+            validateDependents();
+        });
+    }
+    
+    // Enhanced dependent validation
+    function validateDependents() {
+        if (!filingStatusSelect || !dependentsInput || !dependentsHelp) return true;
+        
+        const filingStatus = filingStatusSelect.value;
+        const dependents = parseInt(dependentsInput.value) || 0;
+        
+        dependentsInput.setCustomValidity('');
+        
+        let helpText = 'Children or other dependents (affects child tax credit)';
+        let isValid = true;
+        
+        switch(filingStatus) {
+            case 'single':
+                if (dependents > 1) {
+                    dependentsInput.setCustomValidity('Single filers can have a maximum of 1 dependent');
+                    isValid = false;
+                }
+                helpText += ' - Maximum 1 dependent for single filers';
+                break;
+            case 'head_of_household':
+                if (dependents === 0) {
+                    dependentsInput.setCustomValidity('Head of Household filing status requires at least 1 dependent');
+                    isValid = false;
+                }
+                helpText += ' - At least 1 dependent required for Head of Household';
+                break;
+            case 'married_joint':
+            case 'married_separate':
+                helpText += ' - No specific limit for married filers';
+                break;
+            default:
+                helpText += ' - Please select filing status first';
+        }
+        
+        dependentsHelp.textContent = helpText;
+        
+        // Visual feedback
+        dependentsInput.classList.remove('valid', 'invalid');
+        if (filingStatus && dependentsInput.value !== '') {
+            dependentsInput.classList.add(isValid ? 'valid' : 'invalid');
+        }
+        
+        return isValid;
+    }
+    
+    // Event listeners
+    if (filingStatusSelect) {
+        filingStatusSelect.addEventListener('change', function() {
+            validateDependents();
+            showFilingStatusInfo();
+        });
+    }
+    
+    // Form submission validation
+    const form = document.querySelector('.tax-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Ensure all integer fields have clean values
+            if (ageInput && ageInput.value) {
+                ageInput.value = parseInt(ageInput.value) || '';
+            }
+            if (dependentsInput && dependentsInput.value) {
+                dependentsInput.value = parseInt(dependentsInput.value) || 0;
+            }
+            
+            // Validate dependents rules
+            const isDependentsValid = validateDependents();
+            
+            // Check age validity
+            const age = parseInt(ageInput?.value);
+            const isAgeValid = age >= 18 && age <= 120;
+            
+            if (!isAgeValid) {
+                e.preventDefault();
+                showToast('Please enter a valid age between 18 and 120', 'error');
+                return false;
+            }
+            
+            if (!isDependentsValid) {
+                e.preventDefault();
+                showToast('Please correct the dependents field', 'error');
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+                submitBtn.disabled = true;
+            }
+        });
+    }
+    
+    // Helper functions
+    function showFilingStatusInfo() {
+        const filingStatus = filingStatusSelect?.value;
+        if (!filingStatus) return;
+        
+        const infoMap = {
+            'single': 'For unmarried individuals or those legally separated',
+            'married_joint': 'For married couples filing together (usually more beneficial)',
+            'married_separate': 'For married couples filing separately',
+            'head_of_household': 'For unmarried individuals supporting dependents'
+        };
+        
+        const info = infoMap[filingStatus];
+        if (info) {
+            showToast(info, 'info');
+        }
+    }
+    
+    function showToast(message, type = 'info') {
+        const existingToasts = document.querySelectorAll('.toast');
+        existingToasts.forEach(toast => toast.remove());
+        
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        const iconMap = {
+            'info': 'fa-info-circle',
+            'warning': 'fa-exclamation-triangle',
+            'error': 'fa-times-circle',
+            'success': 'fa-check-circle'
+        };
+        
+        toast.innerHTML = `
+            <i class="fas ${iconMap[type] || 'fa-info-circle'}"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }, 4000);
+    }
+    
+    // Reset form functionality
+    const resetBtn = form?.querySelector('button[type="reset"]');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            setTimeout(() => {
+                const inputs = form.querySelectorAll('input');
+                inputs.forEach(input => {
+                    input.classList.remove('valid', 'invalid');
+                    input.setCustomValidity('');
+                });
+                
+                if (dependentsHelp) {
+                    dependentsHelp.textContent = 'Children or other dependents (affects child tax credit)';
+                }
+            }, 50);
+        });
+    }
+});
+</script>
 {% endblock %}

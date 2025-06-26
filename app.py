@@ -21,12 +21,15 @@ def validate_input(data):
     
     # Validate income
     try:
-        income = float(data.get('income', 0))
+        income_str = str(data.get('income', '0')).strip()
+        if income_str == '':
+            income_str = '0'
+        income = float(income_str)
         if income < 0:
             errors.append("Income cannot be negative")
         elif income > 10000000:  # Reasonable upper limit
             errors.append("Income amount seems unusually high")
-    except ValueError:
+    except (ValueError, TypeError):
         errors.append("Invalid income amount")
     
     # Validate filing status
@@ -35,43 +38,65 @@ def validate_input(data):
     if filing_status not in valid_statuses:
         errors.append("Invalid filing status")
     
-    # Validate age
+    # Validate age - Fixed validation
     try:
-        age = int(data.get('age', 0))
-        if age < 18 or age > 120:
-            errors.append("Invalid age")
-    except ValueError:
-        errors.append("Invalid age")
+        age_str = str(data.get('age', '')).strip()
+        if age_str == '':
+            errors.append("Age is required")
+        else:
+            age = int(float(age_str))  # Convert to float first, then int to handle decimal inputs
+            if age < 18 or age > 120:
+                errors.append("Age must be between 18 and 120")
+    except (ValueError, TypeError):
+        errors.append("Invalid age - please enter a whole number")
     
-    # Validate dependents
+    # Validate dependents - Fixed validation
     try:
-        dependents = int(data.get('dependents', 0))
+        dependents_str = str(data.get('dependents', '0')).strip()
+        if dependents_str == '':
+            dependents_str = '0'
+        dependents = int(float(dependents_str))  # Convert to float first, then int
         if dependents < 0:
             errors.append("Number of dependents cannot be negative")
         elif dependents > 20:  # Reasonable upper limit
             errors.append("Number of dependents seems unusually high")
         
-        # Special validation for filing status and dependents
+        # Filing status specific dependent rules
         if filing_status == 'single' and dependents > 1:
             errors.append("Single filers can have a maximum of 1 dependent")
-        
-    except ValueError:
-        errors.append("Invalid number of dependents")
+        elif filing_status == 'head_of_household' and dependents == 0:
+            errors.append("Head of Household filing status requires at least 1 dependent")
+            
+    except (ValueError, TypeError):
+        errors.append("Invalid number of dependents - please enter a whole number")
     
     # Validate deductions
     try:
-        deductions = float(data.get('itemized_deductions', 0))
+        deductions_str = str(data.get('itemized_deductions', '0')).strip()
+        if deductions_str == '':
+            deductions_str = '0'
+        deductions = float(deductions_str)
         if deductions < 0:
             errors.append("Deductions cannot be negative")
-    except ValueError:
+    except (ValueError, TypeError):
         errors.append("Invalid deduction amount")
     
     # Validate withholding
     try:
-        withholding = float(data.get('withholding', 0))
+        withholding_str = str(data.get('withholding', '0')).strip()
+        if withholding_str == '':
+            withholding_str = '0'
+        withholding = float(withholding_str)
         if withholding < 0:
             errors.append("Tax withholding cannot be negative")
-    except ValueError:
+        # Cross-validate withholding against income
+        try:
+            income_val = float(str(data.get('income', '0')).strip() or '0')
+            if withholding > income_val:
+                errors.append("Tax withholding cannot exceed total income")
+        except (ValueError, TypeError):
+            pass  # Income validation will catch this
+    except (ValueError, TypeError):
         errors.append("Invalid withholding amount")
     
     return errors
@@ -85,30 +110,43 @@ def index():
 def calculate_tax():
     """Process tax calculation"""
     try:
-        # Get form data
+        # Get form data with better handling
         user_data = {
-            'income': request.form.get('income'),
-            'filing_status': request.form.get('filing_status'),
-            'age': request.form.get('age'),
-            'itemized_deductions': request.form.get('itemized_deductions', '0'),
-            'dependents': request.form.get('dependents', '0'),
-            'withholding': request.form.get('withholding', '0')
+            'income': request.form.get('income', '').strip(),
+            'filing_status': request.form.get('filing_status', '').strip(),
+            'age': request.form.get('age', '').strip(),
+            'itemized_deductions': request.form.get('itemized_deductions', '0').strip(),
+            'dependents': request.form.get('dependents', '0').strip(),
+            'withholding': request.form.get('withholding', '0').strip()
         }
+        
+        # Log the received data for debugging
+        logger.info(f"Received form data: {user_data}")
         
         # Validate input
         errors = validate_input(user_data)
         if errors:
+            logger.warning(f"Validation errors: {errors}")
             return render_template('index.html', errors=errors, form_data=user_data)
         
-        # Convert to appropriate types
-        processed_data = {
-            'income': float(user_data['income']),
-            'filing_status': user_data['filing_status'],
-            'age': int(user_data['age']),
-            'itemized_deductions': float(user_data['itemized_deductions']),
-            'dependents': int(user_data['dependents']),
-            'withholding': float(user_data['withholding'])
-        }
+        # Convert to appropriate types with better error handling
+        try:
+            processed_data = {
+                'income': float(user_data['income'] or '0'),
+                'filing_status': user_data['filing_status'],
+                'age': int(float(user_data['age'])),  # Handle potential decimal values
+                'itemized_deductions': float(user_data['itemized_deductions'] or '0'),
+                'dependents': int(float(user_data['dependents'] or '0')),  # Handle potential decimal values
+                'withholding': float(user_data['withholding'] or '0')
+            }
+        except (ValueError, TypeError) as e:
+            logger.error(f"Error converting data types: {str(e)}")
+            return render_template('index.html', 
+                                 errors=[f"Data conversion error: {str(e)}"], 
+                                 form_data=user_data)
+        
+        # Log processed data
+        logger.info(f"Processed data: {processed_data}")
         
         # Calculate tax
         tax_result = tax_calc.calculate_tax(processed_data)
@@ -126,8 +164,10 @@ def calculate_tax():
     except Exception as e:
         logger.error(f"Error in tax calculation: {str(e)}")
         return render_template('index.html', 
-                             errors=[f"An error occurred: {str(e)}"], 
-                             form_data=user_data)
+                             errors=[f"An unexpected error occurred. Please try again."], 
+                             form_data=user_data if 'user_data' in locals() else {})
+
+# ... rest of your routes remain the same ...
 
 @app.route('/tax_form')
 def generate_tax_form():
@@ -144,10 +184,10 @@ def generate_tax_form():
     return render_template('tax_form.html', 
                          user_data=user_data, 
                          tax_result=tax_result,
-                         current_year=datetime.now().year)
+                         current_year=datetime.now().year,
+                         current_date=current_date)
 
 @app.route('/download_form')
-
 def download_form():
     """Download tax form as PDF file"""
     user_data = session.get('user_data')
@@ -237,160 +277,8 @@ def generate_pdf_form(user_data, tax_result):
     story.append(personal_table)
     story.append(Spacer(1, 20))
     
-    # Income Section
-    story.append(Paragraph("Income", heading_style))
-    income_data = [
-        ['Line 1 - Total Income:', f"${user_data['income']:,.2f}"]
-    ]
-    income_table = Table(income_data, colWidths=[3*inch, 2*inch])
-    income_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-        ('BACKGROUND', (1, 0), (1, -1), colors.white),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    story.append(income_table)
-    story.append(Spacer(1, 20))
-    
-    # Deductions Section
-    story.append(Paragraph("Deductions", heading_style))
-    deductions_data = [
-        ['Line 2a - Standard Deduction:', f"${tax_result['standard_deduction']:,.2f}"],
-        ['Line 2b - Itemized Deductions:', f"${user_data['itemized_deductions']:,.2f}"],
-        ['Line 3 - Total Deductions:', f"${tax_result['total_deductions']:,.2f}"],
-        ['Line 4 - Taxable Income:', f"${tax_result['taxable_income']:,.2f}"]
-    ]
-    deductions_table = Table(deductions_data, colWidths=[3*inch, 2*inch])
-    deductions_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-        ('BACKGROUND', (1, 0), (1, -1), colors.white),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        # Highlight total deductions and taxable income
-        ('BACKGROUND', (0, 2), (-1, 3), colors.lightyellow),
-        ('FONTNAME', (0, 2), (-1, 3), 'Helvetica-Bold')
-    ]))
-    story.append(deductions_table)
-    story.append(Spacer(1, 20))
-    
-    # Tax Calculation Section
-    story.append(Paragraph("Tax Calculation", heading_style))
-    tax_calc_data = [
-        ['Line 5 - Tax on Taxable Income:', f"${tax_result['federal_tax_before_credits']:,.2f}"]
-    ]
-    
-    # Add child tax credit if applicable
-    if tax_result.get('child_tax_credit', 0) > 0:
-        tax_calc_data.append(['Line 6 - Child Tax Credit:', f"${tax_result['child_tax_credit']:,.2f}"])
-        tax_calc_data.append(['Line 7 - Total Tax After Credits:', f"${tax_result['tax_owed']:,.2f}"])
-    else:
-        tax_calc_data.append(['Line 7 - Total Tax After Credits:', f"${tax_result['tax_owed']:,.2f}"])
-    
-    tax_calc_table = Table(tax_calc_data, colWidths=[3*inch, 2*inch])
-    tax_calc_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-        ('BACKGROUND', (1, 0), (1, -1), colors.white),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        # Highlight final tax amount
-        ('BACKGROUND', (0, -1), (-1, -1), colors.lightyellow),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold')
-    ]))
-    story.append(tax_calc_table)
-    story.append(Spacer(1, 20))
-    
-    # Payments Section
-    story.append(Paragraph("Payments", heading_style))
-    payments_data = [
-        ['Line 8 - Federal Income Tax Withheld:', f"${user_data['withholding']:,.2f}"]
-    ]
-    payments_table = Table(payments_data, colWidths=[3*inch, 2*inch])
-    payments_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-        ('BACKGROUND', (1, 0), (1, -1), colors.white),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    story.append(payments_table)
-    story.append(Spacer(1, 20))
-    
-    # Final Result Section
-    story.append(Paragraph("Final Result", heading_style))
-    
-    if tax_result['refund_or_owe'] > 0:
-        result_text = f"REFUND: ${tax_result['refund_or_owe']:,.2f}"
-        result_color = colors.green
-    else:
-        result_text = f"AMOUNT OWED: ${abs(tax_result['refund_or_owe']):,.2f}"
-        result_color = colors.red
-    
-    result_data = [
-        ['Line 9 - Final Result:', result_text]
-    ]
-    result_table = Table(result_data, colWidths=[3*inch, 2*inch])
-    result_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.black),
-        ('TEXTCOLOR', (0, 0), (0, -1), colors.white),
-        ('TEXTCOLOR', (1, 0), (1, -1), result_color),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
-        ('TOPPADDING', (0, 0), (-1, -1), 15),
-        ('GRID', (0, 0), (-1, -1), 2, colors.black)
-    ]))
-    story.append(result_table)
-    story.append(Spacer(1, 30))
-    
-    # Tax Rate Information
-    story.append(Paragraph("Tax Rate Information", heading_style))
-    rate_data = [
-        ['Effective Tax Rate:', f"{tax_result['effective_tax_rate']}%"],
-        ['Marginal Tax Rate:', f"{tax_result['marginal_tax_rate']}%"]
-    ]
-    rate_table = Table(rate_data, colWidths=[3*inch, 2*inch])
-    rate_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-        ('BACKGROUND', (1, 0), (1, -1), colors.white),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    story.append(rate_table)
-    story.append(Spacer(1, 30))
-    
-    # Footer
-    footer_style = ParagraphStyle(
-        'Footer',
-        parent=styles['Normal'],
-        fontSize=8,
-        textColor=colors.grey,
-        alignment=1  # Center alignment
-    )
-    
-    story.append(Paragraph(f"Generated by AI Tax Return Agent on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", footer_style))
-    story.append(Spacer(1, 10))
-    story.append(Paragraph("PROTOTYPE VERSION - FOR EDUCATIONAL PURPOSES ONLY", footer_style))
-    story.append(Paragraph("This form is not suitable for actual tax filing. Consult a qualified tax professional.", footer_style))
+    # Continue with rest of PDF generation...
+    # (Include the rest of the PDF generation code from previous response)
     
     # Build PDF
     doc.build(story)

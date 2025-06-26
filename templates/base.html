@@ -5,15 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AI Tax Return Agent{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <header>
         <nav class="navbar">
             <div class="nav-container">
-                <h1 class="nav-title">🤖 AI Tax Agent</h1>
+                <h1 class="nav-title">
+                    <i class="fas fa-robot"></i> AI Tax Agent
+                </h1>
                 <div class="nav-links">
-                    <a href="{{ url_for('index') }}">New Return</a>
+                    <a href="{{ url_for('index') }}">
+                        <i class="fas fa-plus-circle"></i> New Return
+                    </a>
                 </div>
             </div>
         </nav>
@@ -30,29 +35,492 @@
         </div>
     </footer>
     
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="loading"></div>
+            <p>Processing your tax return...</p>
+        </div>
+    </div>
+    
     <script>
-        // Basic form validation and user experience enhancements
+        // Enhanced JavaScript with Interactions
         document.addEventListener('DOMContentLoaded', function() {
-            // Format currency inputs
-            const currencyInputs = document.querySelectorAll('input[data-currency]');
+            
+            // Form Enhancement and Validation
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    showLoading();
+                });
+            });
+            
+            // Interactive Form Fields
+            const inputs = document.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                // Add focus animations
+                input.addEventListener('focus', function() {
+                    this.parentElement.classList.add('focused');
+                    addRippleEffect(this);
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.parentElement.classList.remove('focused');
+                });
+                
+                // Real-time validation feedback
+                input.addEventListener('input', function() {
+                    validateField(this);
+                });
+            });
+            
+            // Currency formatting with animation
+            const currencyInputs = document.querySelectorAll('input[type="number"]');
             currencyInputs.forEach(input => {
                 input.addEventListener('blur', function() {
-                    if (this.value) {
-                        const value = parseFloat(this.value.replace(/[^0-9.-]+/g, ""));
-                        if (!isNaN(value)) {
-                            this.value = value.toLocaleString('en-US', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            });
+                    if (this.value && this.value.trim() !== '') {
+                        const value = parseFloat(this.value);
+                        if (!isNaN(value) && value >= 0) {
+                            animateValue(this, 0, value, 500);
                         }
                     }
                 });
+            });
+            
+            // Interactive tooltips
+            addInteractiveTooltips();
+            
+            // Form section animations
+            const formSections = document.querySelectorAll('.form-section');
+            formSections.forEach((section, index) => {
+                section.style.animationDelay = `${index * 0.1}s`;
+                section.classList.add('animate-in');
+            });
+            
+            // Enhanced button interactions
+            const buttons = document.querySelectorAll('.btn-primary, .btn-secondary, .btn-outline');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    createRipple(e, this);
+                });
                 
-                input.addEventListener('focus', function() {
-                    this.value = this.value.replace(/[^0-9.-]+/g, "");
+                button.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-3px) scale(1.02)';
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
                 });
             });
+            
+            // Smooth scrolling for navigation
+            const navLinks = document.querySelectorAll('a[href^="#"]');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Progressive form filling
+            trackFormProgress();
+            
+            // Enhanced filing status dependent validation
+            const filingStatusSelect = document.getElementById('filing_status');
+            const dependentsInput = document.getElementById('dependents');
+            
+            if (filingStatusSelect && dependentsInput) {
+                filingStatusSelect.addEventListener('change', function() {
+                    updateDependentsValidation();
+                    showFilingStatusInfo();
+                });
+                
+                dependentsInput.addEventListener('input', function() {
+                    updateDependentsValidation();
+                });
+            }
         });
+        
+        // Interactive Functions
+        function showLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+                overlay.style.animation = 'fadeIn 0.3s ease';
+            }
+        }
+        
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 300);
+            }
+        }
+        
+        function addRippleEffect(element) {
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            element.parentElement.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        }
+        
+        function createRipple(event, element) {
+            const circle = document.createElement('span');
+            const diameter = Math.max(element.clientWidth, element.clientHeight);
+            const radius = diameter / 2;
+            
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${event.clientX - element.offsetLeft - radius}px`;
+            circle.style.top = `${event.clientY - element.offsetTop - radius}px`;
+            circle.classList.add('ripple-effect');
+            
+            const ripple = element.getElementsByClassName('ripple-effect')[0];
+            if (ripple) {
+                ripple.remove();
+            }
+            
+            element.appendChild(circle);
+        }
+        
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = progress * (end - start) + start;
+                element.value = current.toFixed(2);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        function validateField(field) {
+            const value = field.value;
+            const fieldType = field.type;
+            const fieldName = field.name;
+            
+            // Remove existing validation classes
+            field.classList.remove('valid', 'invalid');
+            
+            let isValid = true;
+            
+            if (fieldType === 'number') {
+                const numValue = parseFloat(value);
+                if (isNaN(numValue) || numValue < 0) {
+                    isValid = false;
+                }
+            }
+            
+            if (fieldName === 'income' && parseFloat(value) > 10000000) {
+                isValid = false;
+            }
+            
+            if (fieldName === 'age') {
+                const age = parseInt(value);
+                if (age < 18 || age > 120) {
+                    isValid = false;
+                }
+            }
+            
+            field.classList.add(isValid ? 'valid' : 'invalid');
+            
+            return isValid;
+        }
+        
+        function addInteractiveTooltips() {
+            const tooltipElements = document.querySelectorAll('[data-tooltip]');
+            tooltipElements.forEach(element => {
+                element.classList.add('interactive-tooltip');
+            });
+        }
+        
+        function trackFormProgress() {
+            const form = document.querySelector('.tax-form');
+            if (!form) return;
+            
+            const inputs = form.querySelectorAll('input[required], select[required]');
+            const progressBar = createProgressBar();
+            
+            inputs.forEach(input => {
+                input.addEventListener('input', updateProgress);
+            });
+            
+            function updateProgress() {
+                const filledInputs = Array.from(inputs).filter(input => input.value.trim() !== '');
+                const progress = (filledInputs.length / inputs.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                
+                if (progress === 100) {
+                    progressBar.style.background = 'var(--success-gradient)';
+                }
+            }
+        }
+        
+        function createProgressBar() {
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'progress-container';
+            progressContainer.innerHTML = `
+                <div class="progress-label">Form Completion</div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            `;
+            
+            const form = document.querySelector('.form-container');
+            if (form) {
+                form.insertBefore(progressContainer, form.firstChild);
+            }
+            
+            return progressContainer.querySelector('.progress-bar');
+        }
+        
+        function updateDependentsValidation() {
+            const filingStatus = document.getElementById('filing_status')?.value;
+            const dependentsInput = document.getElementById('dependents');
+            const dependentsHelp = document.getElementById('dependents-help');
+            
+            if (!dependentsInput || !dependentsHelp) return;
+            
+            const dependents = parseInt(dependentsInput.value) || 0;
+            
+            dependentsInput.setCustomValidity('');
+            
+            let helpText = 'Children or other dependents (affects child tax credit)';
+            let isValid = true;
+            
+            switch(filingStatus) {
+                case 'single':
+                    if (dependents > 1) {
+                        dependentsInput.setCustomValidity('Single filers can have a maximum of 1 dependent');
+                        isValid = false;
+                    }
+                    helpText += ' - Maximum 1 dependent for single filers';
+                    break;
+                case 'head_of_household':
+                    if (dependents === 0) {
+                        dependentsInput.setCustomValidity('Head of Household filing status requires at least 1 dependent');
+                        isValid = false;
+                    }
+                    helpText += ' - At least 1 dependent required for Head of Household';
+                    break;
+                default:
+                    helpText += ' - No specific limit for this filing status';
+            }
+            
+            dependentsHelp.textContent = helpText;
+            dependentsInput.classList.toggle('invalid', !isValid);
+            dependentsInput.classList.toggle('valid', isValid && dependents >= 0);
+        }
+        
+        function showFilingStatusInfo() {
+            const filingStatus = document.getElementById('filing_status')?.value;
+            if (!filingStatus) return;
+            
+            const infoMap = {
+                'single': 'For unmarried individuals or those legally separated',
+                'married_joint': 'For married couples filing together (usually more beneficial)',
+                'married_separate': 'For married couples filing separately',
+                'head_of_household': 'For unmarried individuals supporting dependents'
+            };
+            
+            const info = infoMap[filingStatus];
+            if (info) {
+                showToast(info, 'info');
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
     </script>
+    
+    <style>
+        /* Additional Interactive Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .loading-spinner .loading {
+            margin-bottom: 1rem;
+            width: 40px;
+            height: 40px;
+            border-width: 4px;
+        }
+        
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.3);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        .ripple-effect {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+        
+        .form-group.focused label {
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .form-group input.valid,
+        .form-group select.valid {
+            border-color: var(--success-color);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        
+        .form-group input.invalid,
+        .form-group select.invalid {
+            border-color: var(--danger-color);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+        
+        .progress-container {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--border-radius-md);
+            backdrop-filter: blur(5px);
+        }
+        
+        .progress-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 4px;
+            transition: width 0.3s ease, background 0.3s ease;
+            position: relative;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius-md);
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast-info {
+            background: var(--primary-gradient);
+        }
+        
+        .toast-success {
+            background: var(--success-gradient);
+        }
+        
+        .toast-warning {
+            background: var(--warning-gradient);
+        }
+        
+        .toast-error {
+            background: var(--danger-gradient);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        .animate-in {
+            animation: slideInUp 0.6s ease-out both;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </body>
 </html>
