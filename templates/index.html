@@ -3,6 +3,7 @@
 {% block title %}Tax Information Input - AI Tax Agent{% endblock %}
 
 {% block content %}
+
 <div class="container">
     <div class="form-container">
         <h2>Enter Your Tax Information</h2>
@@ -48,6 +49,31 @@
                     <small>Children or other dependents (affects child tax credit)</small>
                 </div>
             </div>
+
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const filingStatusSelect = document.getElementById('filing_status');
+                const dependentsInput = document.getElementById('dependents');
+                
+                function validateDependents() {
+                    const filingStatus = filingStatusSelect.value;
+                    const dependents = parseInt(dependentsInput.value) || 0;
+                    
+                    // Clear any existing custom validity
+                    dependentsInput.setCustomValidity('');
+                    
+                    if (filingStatus === 'single' && dependents > 1) {
+                        dependentsInput.setCustomValidity('Single filers can have a maximum of 1 dependent');
+                    } else if (filingStatus === 'head_of_household' && dependents === 0) {
+                        dependentsInput.setCustomValidity('Head of Household filing status requires at least 1 dependent');
+                    }
+                }
+                
+                // Add event listeners
+                filingStatusSelect.addEventListener('change', validateDependents);
+                dependentsInput.addEventListener('input', validateDependents);
+            });
+            </script>
             
             <div class="form-section">
                 <h3>Income Information</h3>

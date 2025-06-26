@@ -31,7 +31,8 @@ def validate_input(data):
     
     # Validate filing status
     valid_statuses = ['single', 'married_joint', 'married_separate', 'head_of_household']
-    if data.get('filing_status') not in valid_statuses:
+    filing_status = data.get('filing_status')
+    if filing_status not in valid_statuses:
         errors.append("Invalid filing status")
     
     # Validate age
@@ -42,6 +43,21 @@ def validate_input(data):
     except ValueError:
         errors.append("Invalid age")
     
+    # Validate dependents
+    try:
+        dependents = int(data.get('dependents', 0))
+        if dependents < 0:
+            errors.append("Number of dependents cannot be negative")
+        elif dependents > 20:  # Reasonable upper limit
+            errors.append("Number of dependents seems unusually high")
+        
+        # Special validation for filing status and dependents
+        if filing_status == 'single' and dependents > 1:
+            errors.append("Single filers can have a maximum of 1 dependent")
+        
+    except ValueError:
+        errors.append("Invalid number of dependents")
+    
     # Validate deductions
     try:
         deductions = float(data.get('itemized_deductions', 0))
@@ -49,6 +65,14 @@ def validate_input(data):
             errors.append("Deductions cannot be negative")
     except ValueError:
         errors.append("Invalid deduction amount")
+    
+    # Validate withholding
+    try:
+        withholding = float(data.get('withholding', 0))
+        if withholding < 0:
+            errors.append("Tax withholding cannot be negative")
+    except ValueError:
+        errors.append("Invalid withholding amount")
     
     return errors
 
@@ -123,51 +147,6 @@ def generate_tax_form():
                          current_year=datetime.now().year)
 
 @app.route('/download_form')
-# def download_form():
-#     """Download tax form as text file"""
-#     user_data = session.get('user_data')
-#     tax_result = session.get('tax_result')
-    
-#     if not user_data or not tax_result:
-#         return redirect(url_for('index'))
-    
-#     # Generate form content
-#     form_content = f"""
-#     TAX RETURN FORM - {datetime.now().year}
-#     =====================================
-    
-#     TAXPAYER INFORMATION:
-#     Filing Status: {user_data['filing_status'].replace('_', ' ').title()}
-#     Age: {user_data['age']}
-#     Number of Dependents: {user_data['dependents']}
-    
-#     INCOME INFORMATION:
-#     Total Income: ${user_data['income']:,.2f}
-    
-#     DEDUCTIONS:
-#     Standard Deduction: ${tax_result['standard_deduction']:,.2f}
-#     Itemized Deductions: ${user_data['itemized_deductions']:,.2f}
-#     Total Deductions: ${tax_result['total_deductions']:,.2f}
-    
-#     TAX CALCULATION:
-#     Taxable Income: ${tax_result['taxable_income']:,.2f}
-#     Tax Owed: ${tax_result['tax_owed']:,.2f}
-#     Tax Withheld: ${user_data['withholding']:,.2f}
-    
-#     RESULT:
-#     {"Refund Due: $" + str(abs(tax_result['refund_or_owe'])) if tax_result['refund_or_owe'] > 0 else "Amount Owed: $" + str(abs(tax_result['refund_or_owe']))}
-    
-#     Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-#     """
-    
-#     response = make_response(form_content)
-#     response.headers['Content-Type'] = 'text/plain'
-#     response.headers['Content-Disposition'] = 'attachment; filename=tax_return.txt'
-    
-#     return response
-
-# if __name__ == '__main__':
-#     app.run(debug=True)
 
 def download_form():
     """Download tax form as PDF file"""
