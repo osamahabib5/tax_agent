@@ -33,7 +33,7 @@ A comprehensive prototype of an **AI-powered tax return preparation system** bui
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/osamahabib5/tax_agent.git
    cd tax_agent
    ```
 
