@@ -1,8 +1,8 @@
 import os
 import logging
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from datetime import datetime
-
+# from datetime import datetime
+import datetime as dt
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -75,7 +75,7 @@ def health_check():
     logger.info("Health check accessed")
     return jsonify({
         'status': 'healthy',
-        'timestamp': str(datetime.now()),
+        'timestamp': str(dt.datetime.now()),
         'service': 'AI Tax Return Agent',
         'version': '1.0.0'
     }), 200
