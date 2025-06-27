@@ -38,7 +38,7 @@
                 <div class="form-line">
                     <span class="line-number">1.</span>
                     <span class="line-description">Total Income</span>
-                    <span class="line-amount">${{ "%.2f"|format(tax_result.gross_income) }}</span>
+                    <span class="line-amount">${{ "%.2f"|format(user_data.income) }}</span>
                 </div>
             </section>
             
@@ -53,7 +53,7 @@
                 <div class="form-line">
                     <span class="line-number">2b.</span>
                     <span class="line-description">Itemized Deductions</span>
-                    <span class="line-amount">${{ "%.2f"|format(tax_result.itemized_deductions) }}</span>
+                    <span class="line-amount">${{ "%.2f"|format(user_data.itemized_deductions) }}</span>
                 </div>
                 <div class="form-line total-line">
                     <span class="line-number">3.</span>
@@ -147,11 +147,21 @@
         <!-- Print/Download Actions -->
         <div class="form-actions no-print">
             <button onclick="window.print()" class="btn-primary">🖨️ Print Form</button>
-            <a href="{{ url_for('download_form') }}" class="btn-secondary">📄 Download as PDF</a>
-            <a href="{{ url_for('index') }}" class="btn-outline">🔄 New Return</a>
+            <a href="{{ url_for('download_form') }}" class="btn-secondary">📄 Download PDF</a>
+            <a href="{{ url_for('index') }}" class="btn-outline">🔄 Back to Form</a>
+            <a href="{{ url_for('new_return') }}" class="btn-outline">📄 New Return</a>
+            <button onclick="confirmClearSession()" class="btn-warning">🗑️ Clear Data</button>
         </div>
     </div>
 </div>
+
+<script>
+function confirmClearSession() {
+    if (confirm('This will permanently clear all your tax return data. Continue?')) {
+        window.location.href = '{{ url_for("clear_session") }}';
+    }
+}
+</script>
 
 <style>
 @media print {

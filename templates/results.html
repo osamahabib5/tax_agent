@@ -7,15 +7,15 @@
     <div class="results-container">
         <h2>Your Tax Calculation Results</h2>
         
-        <!-- Summary Card -->
+        <!-- FIXED: Summary Card with Proper Alignment -->
         <div class="result-summary">
             {% if tax_result.refund_or_owe > 0 %}
             <div class="result-card refund">
                 <div class="result-icon">💰</div>
                 <div class="result-content">
                     <h3>Congratulations!</h3>
-                    <p class="result-amount">${{ "%.2f"|format(tax_result.refund_or_owe) }}</p>
-                    <p class="result-label">Refund Expected</p>
+                    <div class="result-amount">${{ "%.2f"|format(tax_result.refund_or_owe) }}</div>
+                    <div class="result-label">Refund Expected</div>
                 </div>
             </div>
             {% else %}
@@ -23,8 +23,8 @@
                 <div class="result-icon">📄</div>
                 <div class="result-content">
                     <h3>Amount Due</h3>
-                    <p class="result-amount">${{ "%.2f"|format(tax_result.refund_or_owe|abs) }}</p>
-                    <p class="result-label">Tax Owed</p>
+                    <div class="result-amount">${{ "%.2f"|format(tax_result.refund_or_owe|abs) }}</div>
+                    <div class="result-label">Tax Owed</div>
                 </div>
             </div>
             {% endif %}
@@ -39,7 +39,7 @@
                     <h4>Income Summary</h4>
                     <div class="detail-item">
                         <span>Gross Income:</span>
-                        <span>${{ "%.2f"|format(tax_result.gross_income) }}</span>
+                        <span>${{ "%.2f"|format(user_data.income) }}</span>
                     </div>
                     <div class="detail-item">
                         <span>Total Deductions:</span>
@@ -73,7 +73,7 @@
                     <h4>Payment Summary</h4>
                     <div class="detail-item">
                         <span>Tax Withheld:</span>
-                        <span>${{ "%.2f"|format(tax_result.withholding) }}</span>
+                        <span>${{ "%.2f"|format(user_data.withholding) }}</span>
                     </div>
                     <div class="detail-item">
                         <span>Tax Owed:</span>
@@ -95,13 +95,15 @@
         <!-- Tax Rates Info -->
         <div class="tax-rates">
             <h3>Your Tax Rates</h3>
-            <div class="rate-item">
-                <span>Effective Tax Rate:</span>
-                <span>{{ tax_result.effective_tax_rate }}%</span>
-            </div>
-            <div class="rate-item">
-                <span>Marginal Tax Rate:</span>
-                <span>{{ tax_result.marginal_tax_rate }}%</span>
+            <div class="rate-info">
+                <div class="rate-item">
+                    <span>Effective Tax Rate:</span>
+                    <span>{{ tax_result.effective_tax_rate }}%</span>
+                </div>
+                <div class="rate-item">
+                    <span>Marginal Tax Rate:</span>
+                    <span>{{ tax_result.marginal_tax_rate }}%</span>
+                </div>
             </div>
         </div>
         
@@ -111,11 +113,12 @@
                 📋 View Tax Form
             </a>
             <a href="{{ url_for('download_form') }}" class="btn-secondary">
-                💾 Download Form
+                📄 Download as PDF
             </a>
             <a href="{{ url_for('index') }}" class="btn-outline">
                 🔄 Calculate Another Return
             </a>
+            <button onclick="clearSessionAndReturn()" class="btn-warning">🗑️ Clear & Start Over</button>
         </div>
         
         <!-- Disclaimer -->
@@ -127,4 +130,45 @@
         </div>
     </div>
 </div>
+
+<script>
+function clearSessionAndReturn() {
+    if (confirm('This will clear all your tax data and start over. Are you sure?')) {
+        fetch('/clear_session')
+        .then(() => {
+            window.location.href = '{{ url_for("index") }}?clear=true';
+        })
+        .catch(error => {
+            console.error('Error clearing session:', error);
+            window.location.href = '{{ url_for("new_return") }}';
+        });
+    }
+}
+</script>
+
+<style>
+/* Additional results page specific styles */
+.disclaimer {
+    background: var(--warning-gradient);
+    border: 2px solid var(--warning-color);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    margin-top: 2rem;
+    color: var(--text-white);
+}
+
+.disclaimer h4 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    color: var(--text-white);
+}
+
+.disclaimer p {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-white);
+    line-height: 1.6;
+}
+</style>
 {% endblock %}

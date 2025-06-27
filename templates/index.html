@@ -96,13 +96,88 @@
             </div>
             
             <div class="form-actions">
-                <button type="submit" class="btn-primary">
+                <button type="submit" class="btn-primary" id="submitBtn">
                     <i class="fas fa-calculator"></i> Calculate My Tax Return
                 </button>
-                <button type="reset" class="btn-secondary">
+                <button type="button" class="btn-secondary" id="resetBtn">
                     <i class="fas fa-undo"></i> Clear Form
                 </button>
+                <a href="{{ url_for('new_return') }}" class="btn-outline">
+                    <i class="fas fa-file-plus"></i> New Return
+                </a>
             </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Enhanced form reset functionality
+                    const resetBtn = document.getElementById('resetBtn');
+                    const form = document.querySelector('.tax-form');
+                    
+                    if (resetBtn && form) {
+                        resetBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            
+                            // Show confirmation dialog
+                            if (confirm('Are you sure you want to clear all form data?')) {
+                                // Clear the form
+                                form.reset();
+                                
+                                // Clear session data via AJAX
+                                fetch('/reset_form', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    }
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log('Session cleared:', data);
+                                })
+                                .catch(error => {
+                                    console.error('Error clearing session:', error);
+                                });
+                                
+                                // Clear validation classes
+                                const inputs = form.querySelectorAll('input, select');
+                                inputs.forEach(input => {
+                                    input.classList.remove('valid', 'invalid');
+                                    input.setCustomValidity('');
+                                });
+                                
+                                // Reset help text
+                                const dependentsHelp = document.getElementById('dependents-help');
+                                if (dependentsHelp) {
+                                    dependentsHelp.textContent = 'Children or other dependents (affects child tax credit)';
+                                }
+                                
+                                // Clear any existing error messages
+                                const errorContainer = document.querySelector('.error-container');
+                                if (errorContainer) {
+                                    errorContainer.remove();
+                                }
+                                
+                                // Show success message
+                                showToast('Form cleared successfully!', 'success');
+                            }
+                        });
+                    }
+                    
+                    // Clear session when page loads (if coming from "New Return")
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('clear') === 'true') {
+                        // Clear any existing form data
+                        if (form) {
+                            form.reset();
+                        }
+                        showToast('Started new tax return', 'info');
+                        
+                        // Remove the parameter from URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                    
+                    // ... rest of your existing JavaScript code ...
+                });
+            </script>
         </form>
     </div>
 </div>
@@ -255,43 +330,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // // Form submission validation
+    // const form = document.querySelector('.tax-form');
+    // if (form) {
+    //     form.addEventListener('submit', function(e) {
+    //         // Ensure all integer fields have clean values
+    //         if (ageInput && ageInput.value) {
+    //             ageInput.value = parseInt(ageInput.value) || '';
+    //         }
+    //         if (dependentsInput && dependentsInput.value) {
+    //             dependentsInput.value = parseInt(dependentsInput.value) || 0;
+    //         }
+            
+    //         // Validate dependents rules
+    //         const isDependentsValid = validateDependents();
+            
+    //         // Check age validity
+    //         const age = parseInt(ageInput?.value);
+    //         const isAgeValid = age >= 18 && age <= 120;
+            
+    //         if (!isAgeValid) {
+    //             e.preventDefault();
+    //             showToast('Please enter a valid age between 18 and 120', 'error');
+    //             return false;
+    //         }
+            
+    //         if (!isDependentsValid) {
+    //             e.preventDefault();
+    //             showToast('Please correct the dependents field', 'error');
+    //             return false;
+    //         }
+            
+    //         // Show loading state
+    //         const submitBtn = form.querySelector('button[type="submit"]');
+    //         if (submitBtn) {
+    //             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+    //             submitBtn.disabled = true;
+    //         }
+    //     });
+    // }
+
     // Form submission validation
     const form = document.querySelector('.tax-form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            // Ensure all integer fields have clean values
-            if (ageInput && ageInput.value) {
-                ageInput.value = parseInt(ageInput.value) || '';
-            }
-            if (dependentsInput && dependentsInput.value) {
-                dependentsInput.value = parseInt(dependentsInput.value) || 0;
-            }
-            
-            // Validate dependents rules
-            const isDependentsValid = validateDependents();
-            
-            // Check age validity
-            const age = parseInt(ageInput?.value);
-            const isAgeValid = age >= 18 && age <= 120;
-            
-            if (!isAgeValid) {
-                e.preventDefault();
-                showToast('Please enter a valid age between 18 and 120', 'error');
-                return false;
+            // ADD DEBUGGING - Log form data before submission
+            const formData = new FormData(form);
+            console.log('DEBUG - Form submission data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
             }
             
-            if (!isDependentsValid) {
-                e.preventDefault();
-                showToast('Please correct the dependents field', 'error');
-                return false;
-            }
-            
-            // Show loading state
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
-                submitBtn.disabled = true;
-            }
+            // ... rest of existing validation code
         });
     }
     

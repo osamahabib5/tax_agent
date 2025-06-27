@@ -16,8 +16,11 @@
                     <i class="fas fa-robot"></i> AI Tax Agent
                 </h1>
                 <div class="nav-links">
-                    <a href="{{ url_for('index') }}">
+                    <a href="{{ url_for('new_return') }}" title="Start a new tax return">
                         <i class="fas fa-plus-circle"></i> New Return
+                    </a>
+                    <a href="{{ url_for('clear_session') }}" title="Clear all data">
+                        <i class="fas fa-trash-alt"></i> Clear All
                     </a>
                 </div>
             </div>

@@ -65,7 +65,6 @@ class TaxCalculator:
             if taxable_income <= min_income:
                 break
             
-            # Calculate tax for this bracket
             taxable_in_bracket = min(taxable_income, max_income) - min_income
             tax_in_bracket = taxable_in_bracket * rate
             total_tax += tax_in_bracket
@@ -76,69 +75,104 @@ class TaxCalculator:
         return round(total_tax, 2)
     
     def calculate_tax(self, user_data):
-        """
-        Main tax calculation method
+        """Main tax calculation method - FIXED INCOME PRESERVATION"""
+        print(f"\nTAX CALCULATOR DEBUG:")
+        print(f"  Received data: {user_data}")
+        print(f"  Data types: {[(k, type(v)) for k, v in user_data.items()]}")
         
-        Args:
-            user_data (dict): Dictionary containing user tax information
+        try:
+            # CRITICAL: Extract income with explicit preservation
+            original_income = user_data.get('income')
+            print(f"  Original income from user_data: {original_income} (type: {type(original_income)})")
             
-        Returns:
-            dict: Comprehensive tax calculation results
-        """
-        income = user_data['income']
-        filing_status = user_data['filing_status']
-        itemized_deductions = user_data.get('itemized_deductions', 0)
-        dependents = user_data.get('dependents', 0)
-        withholding = user_data.get('withholding', 0)
-        age = user_data.get('age', 0)
-        
-        # Get standard deduction
-        standard_deduction = self.standard_deductions[filing_status]
-        
-        # Additional standard deduction for seniors (65+)
-        if age >= 65:
-            if filing_status in ['single', 'head_of_household']:
-                standard_deduction += 1850
-            elif filing_status in ['married_joint', 'married_separate']:
-                standard_deduction += 1500
-        
-        # Choose higher deduction (standard vs itemized)
-        total_deductions = max(standard_deduction, itemized_deductions)
-        
-        # Calculate taxable income
-        taxable_income = max(0, income - total_deductions)
-        
-        # Calculate federal tax
-        federal_tax = self.calculate_federal_tax(taxable_income, filing_status)
-        
-        # Child tax credit (simplified - $2000 per dependent under certain income limits)
-        child_tax_credit = 0
-        if income < 200000:  # Simplified income limit
-            child_tax_credit = dependents * 2000
-        
-        # Total tax after credits
-        tax_after_credits = max(0, federal_tax - child_tax_credit)
-        
-        # Calculate refund or amount owed
-        refund_or_owe = withholding - tax_after_credits
-        
-        # Prepare detailed results
-        result = {
-            'gross_income': round(income, 2),
-            'standard_deduction': round(standard_deduction, 2),
-            'itemized_deductions': round(itemized_deductions, 2),
-            'total_deductions': round(total_deductions, 2),
-            'taxable_income': round(taxable_income, 2),
-            'federal_tax_before_credits': round(federal_tax, 2),
-            'child_tax_credit': round(child_tax_credit, 2),
-            'tax_owed': round(tax_after_credits, 2),
-            'withholding': round(withholding, 2),
-            'refund_or_owe': round(refund_or_owe, 2),
-            'effective_tax_rate': round((tax_after_credits / income * 100) if income > 0 else 0, 2),
-            'marginal_tax_rate': self.get_marginal_rate(taxable_income, filing_status)
-        }
-        
-        return result
+            # Ensure income is correctly preserved as a float
+            income = float(original_income)
+            print(f"  Converted income: {income} (type: {type(income)})")
+            
+            # Extract other data
+            filing_status = user_data['filing_status']
+            itemized_deductions = float(user_data.get('itemized_deductions', 0))
+            dependents = int(user_data.get('dependents', 0))
+            withholding = float(user_data.get('withholding', 0))
+            age = int(user_data.get('age', 0))
+            
+            print(f"  All extracted values:")
+            print(f"    income: {income}")
+            print(f"    filing_status: {filing_status}")
+            print(f"    age: {age}")
+            print(f"    dependents: {dependents}")
+            print(f"    itemized_deductions: {itemized_deductions}")
+            print(f"    withholding: {withholding}")
+            
+            # Get standard deduction
+            standard_deduction = self.standard_deductions[filing_status]
+            print(f"  Base standard deduction: {standard_deduction}")
+            
+            # Additional standard deduction for seniors (65+)
+            if age >= 65:
+                if filing_status in ['single', 'head_of_household']:
+                    standard_deduction += 1850
+                    print(f"  Added senior bonus (single/HOH): +1850")
+                elif filing_status in ['married_joint', 'married_separate']:
+                    standard_deduction += 1500
+                    print(f"  Added senior bonus (married): +1500")
+            
+            print(f"  Final standard deduction: {standard_deduction}")
+            
+            # Choose higher deduction (standard vs itemized)
+            total_deductions = max(standard_deduction, itemized_deductions)
+            print(f"  Total deductions: {total_deductions}")
+            
+            # Calculate taxable income
+            taxable_income = max(0, income - total_deductions)
+            print(f"  Taxable income: {income} - {total_deductions} = {taxable_income}")
+            
+            # Calculate federal tax
+            federal_tax = self.calculate_federal_tax(taxable_income, filing_status)
+            print(f"  Federal tax: {federal_tax}")
+            
+            # Child tax credit (simplified - $2000 per dependent under certain income limits)
+            child_tax_credit = 0
+            if income < 200000:  # Simplified income limit
+                child_tax_credit = dependents * 2000
+            print(f"  Child tax credit: {child_tax_credit}")
+            
+            # Total tax after credits
+            tax_after_credits = max(0, federal_tax - child_tax_credit)
+            print(f"  Tax after credits: {tax_after_credits}")
+            
+            # Calculate refund or amount owed
+            refund_or_owe = withholding - tax_after_credits
+            print(f"  Refund or owe: {withholding} - {tax_after_credits} = {refund_or_owe}")
+            
+            # CRITICAL: Prepare detailed results - PRESERVE ORIGINAL INCOME EXACTLY
+            result = {
+                'gross_income': round(float(income), 2),  # Ensure exact preservation
+                'standard_deduction': round(standard_deduction, 2),
+                'itemized_deductions': round(itemized_deductions, 2),
+                'total_deductions': round(total_deductions, 2),
+                'taxable_income': round(taxable_income, 2),
+                'federal_tax_before_credits': round(federal_tax, 2),
+                'child_tax_credit': round(child_tax_credit, 2),
+                'tax_owed': round(tax_after_credits, 2),
+                'withholding': round(withholding, 2),
+                'refund_or_owe': round(refund_or_owe, 2),
+                'effective_tax_rate': round((tax_after_credits / income * 100) if income > 0 else 0, 2),
+                'marginal_tax_rate': self.get_marginal_rate(taxable_income, filing_status)
+            }
+            
+            print(f"  FINAL VERIFICATION:")
+            print(f"    Input income: {income}")
+            print(f"    Result gross_income: {result['gross_income']}")
+            print(f"    Values match: {income == result['gross_income']}")
+            
+            return result
+            
+        except Exception as e:
+            print(f"  TAX CALCULATOR ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            raise e
     
     def get_marginal_rate(self, taxable_income, filing_status):
         """Get the marginal tax rate for the given income"""
@@ -149,27 +183,3 @@ class TaxCalculator:
                 return round(rate * 100, 1)
         
         return 0
-    
-    def get_tax_advice(self, tax_result, user_data):
-        """Generate basic tax advice based on calculation results"""
-        advice = []
-        
-        # Refund advice
-        if tax_result['refund_or_owe'] > 0:
-            advice.append(f"Great news! You're getting a refund of ${tax_result['refund_or_owe']:,.2f}")
-        else:
-            advice.append(f"You owe ${abs(tax_result['refund_or_owe']):,.2f} in taxes")
-        
-        # Deduction advice
-        if tax_result['itemized_deductions'] < tax_result['standard_deduction']:
-            advice.append("You're using the standard deduction, which is optimal for your situation")
-        else:
-            advice.append("Your itemized deductions exceed the standard deduction - good job keeping records!")
-        
-        # Rate advice
-        if tax_result['effective_tax_rate'] < 10:
-            advice.append("You have a relatively low effective tax rate")
-        elif tax_result['effective_tax_rate'] > 25:
-            advice.append("Consider tax planning strategies to reduce your tax burden")
-        
-        return advice
