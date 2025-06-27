@@ -54,7 +54,7 @@ A comprehensive prototype of an **AI-powered tax return preparation system** bui
      On **Windows**:
 
      ```bash
-     venv\Scripts\activate
+     venv/Scripts/activate
      ```
 
 3. **Install dependencies**
