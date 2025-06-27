@@ -34,7 +34,7 @@ A comprehensive prototype of an **AI-powered tax return preparation system** bui
 
    ```bash
    git clone <repository-url>
-   cd tax_agent_code
+   cd tax_agent
    ```
 
 2. **Create a virtual environment**
