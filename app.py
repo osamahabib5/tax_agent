@@ -3,6 +3,7 @@ import logging
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from datetime import datetime
 
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
