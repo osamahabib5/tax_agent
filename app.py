@@ -75,7 +75,7 @@ def health_check():
     logger.info("Health check accessed")
     return jsonify({
         'status': 'healthy',
-        'timestamp': str(dt.datetime.now()),
+        # 'timestamp': str(dt.datetime.now()),
         'service': 'AI Tax Return Agent',
         'version': '1.0.0'
     }), 200
