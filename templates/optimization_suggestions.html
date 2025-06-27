@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}AI Tax Optimization Suggestions - AI Tax Agent{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="results-container">
+        <h2>🤖 AI-Powered Tax Optimization Suggestions</h2>
+        
+        <!-- ML Optimization Summary -->
+        <div class="optimization-summary">
+            <div class="optimization-card">
+                <div class="optimization-icon">🎯</div>
+                <div class="optimization-content">
+                    <h3>Optimization Potential</h3>
+                    <div class="optimization-level {{ ml_insights.optimization.optimization_potential }}">
+                        {{ ml_insights.optimization.optimization_potential.title() }}
+                    </div>
+                    <div class="confidence-score">
+                        Confidence: {{ "%.0f"|format(ml_insights.optimization.optimization_confidence * 100) }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Audit Risk Assessment -->
+        <div class="risk-assessment">
+            <h3>📊 Audit Risk Assessment</h3>
+            <div class="risk-card {{ ml_insights.audit_risk.risk_level }}">
+                <div class="risk-level">
+                    Risk Level: {{ ml_insights.audit_risk.risk_level.title() }}
+                </div>
+                <div class="risk-probability">
+                    Probability: {{ "%.1f"|format(ml_insights.audit_risk.risk_probability * 100) }}%
+                </div>
+                
+                {% if ml_insights.audit_risk.risk_factors %}
+                <div class="risk-factors">
+                    <h4>Risk Factors:</h4>
+                    <ul>
+                        {% for factor in ml_insights.audit_risk.risk_factors %}
+                        <li>{{ factor }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                {% if ml_insights.audit_risk.mitigation_suggestions %}
+                <div class="mitigation-suggestions">
+                    <h4>Mitigation Suggestions:</h4>
+                    <ul>
+                        {% for suggestion in ml_insights.audit_risk.mitigation_suggestions %}
+                        <li>{{ suggestion }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- ML Recommendations -->
+        {% if ml_insights.optimization.recommendations %}
+        <div class="ml-recommendations">
+            <h3>🎯 Immediate Optimization Recommendations</h3>
+            <div class="recommendations-grid">
+                {% for rec in ml_insights.optimization.recommendations %}
+                <div class="recommendation-card">
+                    <div class="rec-type">{{ rec.type }}</div>
+                    <div class="rec-description">{{ rec.description }}</div>
+                    <div class="rec-savings">
+                        Potential Savings: ${{ "%.0f"|format(rec.estimated_savings) }}
+                    </div>
+                    <div class="rec-effort">Effort Level: {{ rec.effort.title() }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Tax Planning Suggestions -->
+        {% if ml_insights.planning_suggestions %}
+        <div class="planning-suggestions">
+            <h3>📈 Strategic Tax Planning Suggestions</h3>
+            <div class="suggestions-grid">
+                {% for suggestion in ml_insights.planning_suggestions %}
+                <div class="suggestion-card {{ suggestion.priority }}">
+                    <div class="suggestion-header">
+                        <div class="suggestion-category">{{ suggestion.category }}</div>
+                        <div class="priority-badge">{{ suggestion.priority.title() }} Priority</div>
+                    </div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-text">{{ suggestion.suggestion }}</div>
+                        <div class="potential-savings">
+                            Potential Savings: ${{ "%.0f"|format(suggestion.potential_savings) }}
+                        </div>
+                        <div class="implementation">
+                            <strong>Implementation:</strong> {{ suggestion.implementation }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{{ url_for('generate_tax_form') }}" class="btn-primary">
+                📋 View Complete Tax Form
+            </a>
+            <a href="{{ url_for('download_form') }}" class="btn-secondary">
+                📄 Download PDF
+            </a>
+            <a href="{{ url_for('index') }}" class="btn-outline">
+                🔄 New Calculation
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Optimization-specific styles */
+.optimization-summary {
+    margin-bottom: 2rem;
+}
+
+.optimization-card {
+    display: flex;
+    align-items: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: var(--border-radius-xl);
+    margin-bottom: 2rem;
+}
+
+.optimization-icon {
+    font-size: 3rem;
+    margin-right: 2rem;
+}
+
+.optimization-content h3 {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.optimization-level {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.optimization-level.high {
+    color: #10b981;
+}
+
+.optimization-level.medium {
+    color: #f59e0b;
+}
+
+.optimization-level.low {
+    color: #ef4444;
+}
+
+.confidence-score {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* Risk Assessment Styles */
+.risk-assessment {
+    margin-bottom: 2rem;
+}
+
+.risk-card {
+    padding: 2rem;
+    border-radius: var(--border-radius-lg);
+    border: 2px solid;
+    background: white;
+}
+
+.risk-card.low {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.risk-card.medium {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.risk-card.high {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.risk-level {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.risk-probability {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.risk-factors, .mitigation-suggestions {
+    margin-top: 1rem;
+}
+
+.risk-factors h4, .mitigation-suggestions h4 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+/* Recommendations Grid */
+.recommendations-grid, .suggestions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.recommendation-card, .suggestion-card {
+    background: white;
+    border: 2px solid var(--border-light);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+
+.recommendation-card:hover, .suggestion-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-color);
+}
+
+.rec-type, .suggestion-category {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.rec-description, .suggestion-text {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.rec-savings, .potential-savings {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--success-color);
+    margin-bottom: 0.5rem;
+}
+
+.rec-effort {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.suggestion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.suggestion-card.high .priority-badge {
+    background: var(--danger-gradient);
+    color: white;
+}
+
+.suggestion-card.medium .priority-badge {
+    background: var(--warning-gradient);
+    color: white;
+}
+
+.suggestion-card.low .priority-badge {
+    background: var(--success-gradient);
+    color: white;
+}
+
+.implementation {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg-accent);
+    border-radius: var(--border-radius-sm);
+    border-left: 4px solid var(--primary-color);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .optimization-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .optimization-icon {
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
+    
+    .recommendations-grid, .suggestions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .suggestion-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+</style>
+{% endblock %}

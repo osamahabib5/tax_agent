@@ -7,7 +7,7 @@
     <div class="results-container">
         <h2>Your Tax Calculation Results</h2>
         
-        <!-- FIXED: Summary Card with Proper Alignment -->
+        <!-- Summary Card with Proper Alignment -->
         <div class="result-summary">
             {% if tax_result.refund_or_owe > 0 %}
             <div class="result-card refund">
@@ -29,6 +29,50 @@
             </div>
             {% endif %}
         </div>
+
+        <!-- NEW: AI Insights Preview -->
+        {% if ml_insights %}
+        <div class="ai-insights-preview">
+            <h3>🤖 AI Insights Available</h3>
+            <div class="insights-summary">
+                <div class="insight-card">
+                    <div class="insight-icon">🎯</div>
+                    <div class="insight-content">
+                        <div class="insight-title">Optimization Potential</div>
+                        <div class="insight-value {{ ml_insights.optimization.optimization_potential }}">
+                            {{ ml_insights.optimization.optimization_potential.title() }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="insight-card">
+                    <div class="insight-icon">⚠️</div>
+                    <div class="insight-content">
+                        <div class="insight-title">Audit Risk Level</div>
+                        <div class="insight-value {{ ml_insights.audit_risk.risk_level }}">
+                            {{ ml_insights.audit_risk.risk_level.title() }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="insight-card">
+                    <div class="insight-icon">💡</div>
+                    <div class="insight-content">
+                        <div class="insight-title">Planning Suggestions</div>
+                        <div class="insight-value">
+                            {{ ml_insights.planning_suggestions|length }} Available
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ai-cta">
+                <a href="{{ url_for('get_optimization_suggestions') }}" class="btn-ai">
+                    🚀 View Detailed AI Recommendations
+                </a>
+            </div>
+        </div>
+        {% endif %}
         
         <!-- Detailed Breakdown -->
         <div class="details-container">
@@ -91,6 +135,53 @@
                 </div>
             </div>
         </div>
+
+        <!-- NEW: Enhanced Tax Information with API Data -->
+        {% if api_enhancements %}
+        <div class="api-enhancements">
+            <h3>📊 Enhanced Tax Information</h3>
+            
+            {% if api_enhancements.state_tax_info.state_tax_owed > 0 %}
+            <div class="enhancement-section">
+                <h4>State Tax Information</h4>
+                <div class="detail-item">
+                    <span>State:</span>
+                    <span>{{ api_enhancements.state_tax_info.state }}</span>
+                </div>
+                <div class="detail-item">
+                    <span>State Tax Rate:</span>
+                    <span>{{ "%.2f"|format(api_enhancements.state_tax_info.state_tax_rate * 100) }}%</span>
+                </div>
+                <div class="detail-item highlight">
+                    <span>State Tax Owed:</span>
+                    <span>${{ "%.2f"|format(api_enhancements.state_tax_info.state_tax_owed) }}</span>
+                </div>
+                <div class="detail-item highlight">
+                    <span>Total Tax Liability (Federal + State):</span>
+                    <span>${{ "%.2f"|format(tax_result.tax_owed + api_enhancements.state_tax_info.state_tax_owed) }}</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if api_enhancements.enhanced_deductions.additional_deductions %}
+            <div class="enhancement-section">
+                <h4>Additional Deduction Opportunities</h4>
+                {% for deduction in api_enhancements.enhanced_deductions.additional_deductions %}
+                <div class="deduction-opportunity">
+                    <div class="deduction-type">{{ deduction.type }}</div>
+                    <div class="deduction-description">{{ deduction.description }}</div>
+                    <div class="deduction-savings">
+                        Potential Tax Savings: ${{ "%.0f"|format(deduction.tax_savings) }}
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="total-potential-savings">
+                    <strong>Total Potential Additional Savings: ${{ "%.0f"|format(api_enhancements.enhanced_deductions.estimated_savings) }}</strong>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
         
         <!-- Tax Rates Info -->
         <div class="tax-rates">
@@ -109,7 +200,12 @@
         
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <a href="{{ url_for('generate_tax_form') }}" class="btn-primary">
+            {% if ml_insights %}
+            <a href="{{ url_for('get_optimization_suggestions') }}" class="btn-primary">
+                🤖 AI Tax Optimization
+            </a>
+            {% endif %}
+            <a href="{{ url_for('generate_tax_form') }}" class="btn-secondary">
                 📋 View Tax Form
             </a>
             <a href="{{ url_for('download_form') }}" class="btn-secondary">
@@ -124,7 +220,7 @@
         <!-- Disclaimer -->
         <div class="disclaimer">
             <h4>Important Notice</h4>
-            <p>This calculation is based on simplified tax rules and is for educational purposes only. 
+            <p>This calculation includes AI-powered optimization suggestions and third-party API enhancements for educational purposes only. 
                Actual tax calculations may be more complex and should be verified by a qualified tax professional. 
                This tool does not constitute professional tax advice.</p>
         </div>
@@ -147,7 +243,146 @@ function clearSessionAndReturn() {
 </script>
 
 <style>
-/* Additional results page specific styles */
+/* AI Insights Preview Styles */
+.ai-insights-preview {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: var(--border-radius-xl);
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.ai-insights-preview h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.insights-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.insight-card {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 1.5rem;
+    border-radius: var(--border-radius-lg);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.insight-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.insight-title {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+}
+
+.insight-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.insight-value.high {
+    color: #fde68a;
+}
+
+.insight-value.medium {
+    color: #fed7aa;
+}
+
+.insight-value.low {
+    color: #d1fae5;
+}
+
+.btn-ai {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: var(--border-radius-lg);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: inline-block;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+}
+
+.btn-ai:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(240, 147, 251, 0.6);
+}
+
+/* API Enhancements Styles */
+.api-enhancements {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px solid var(--primary-color);
+    border-radius: var(--border-radius-xl);
+    padding: 2rem;
+    margin: 2rem 0;
+}
+
+.api-enhancements h3 {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.enhancement-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: var(--border-radius-lg);
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-light);
+}
+
+.enhancement-section h4 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+}
+
+.deduction-opportunity {
+    background: var(--bg-accent);
+    padding: 1rem;
+    border-radius: var(--border-radius-md);
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--success-color);
+}
+
+.deduction-type {
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.deduction-description {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.deduction-savings {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.total-potential-savings {
+    background: var(--success-gradient);
+    color: white;
+    padding: 1rem;
+    border-radius: var(--border-radius-md);
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+/* Results page specific styles */
 .disclaimer {
     background: var(--warning-gradient);
     border: 2px solid var(--warning-color);
@@ -169,6 +404,25 @@ function clearSessionAndReturn() {
     font-weight: 500;
     color: var(--text-white);
     line-height: 1.6;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .insights-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .ai-insights-preview {
+        padding: 1.5rem;
+    }
+    
+    .api-enhancements {
+        padding: 1.5rem;
+    }
+    
+    .enhancement-section {
+        padding: 1rem;
+    }
 }
 </style>
 {% endblock %}
