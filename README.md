@@ -33,8 +33,8 @@ A comprehensive prototype of an **AI-powered tax return preparation system** bui
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
-   cd tax_agent_code
+   git clone https://github.com/osamahabib5/tax_agent.git
+   cd tax_agent
    ```
 
 2. **Create a virtual environment**
@@ -54,7 +54,7 @@ A comprehensive prototype of an **AI-powered tax return preparation system** bui
      On **Windows**:
 
      ```bash
-     venv\Scripts\activate
+     venv/Scripts/activate
      ```
 
 3. **Install dependencies**
