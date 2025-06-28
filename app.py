@@ -361,6 +361,283 @@ def generate_tax_form():
                          user_data=session['user_data'],
                          tax_result=session['tax_result'])
 
+@app.route('/download_form')
+def download_form():
+    """Download tax form as PDF file"""
+    user_data = session.get('user_data')
+    tax_result = session.get('tax_result')
+    ml_insights = session.get('ml_insights', {})
+    api_enhancements = session.get('api_enhancements', {})
+    
+    if not user_data or not tax_result:
+        return redirect(url_for('index'))
+    
+    try:
+        pdf_buffer = generate_pdf_form(user_data, tax_result, ml_insights, api_enhancements)
+        response = make_response(pdf_buffer.getvalue())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=enhanced_tax_return_{dt.datetime.now().strftime("%Y%m%d")}.pdf'
+        return response
+    except Exception as e:
+        logger.error(f"Error generating PDF: {str(e)}")
+        return download_form_text()
+
+def generate_pdf_form(user_data, tax_result, ml_insights=None, api_enhancements=None):
+    """Generate simplified PDF form content"""
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+        from io import BytesIO
+        
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72,
+                               topMargin=72, bottomMargin=18)
+        
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            spaceAfter=30,
+            alignment=1,
+            textColor=colors.darkblue
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12,
+            textColor=colors.darkblue,
+            borderWidth=1,
+            borderColor=colors.darkblue,
+            borderPadding=5,
+            backColor=colors.lightgrey
+        )
+        
+        story = []
+        
+        # Title
+        story.append(Paragraph(f"U.S. Individual Income Tax Return (AI Enhanced)", title_style))
+        story.append(Paragraph(f"Tax Year {dt.datetime.now().year - 1}", styles['Normal']))
+        story.append(Spacer(1, 20))
+        
+        # Personal Information Section
+        story.append(Paragraph("Personal Information", heading_style))
+        personal_data = [
+            ['Filing Status:', user_data['filing_status'].replace('_', ' ').title()],
+            ['Age:', str(user_data['age'])],
+            ['Number of Dependents:', str(user_data['dependents'])],
+            ['State:', user_data.get('state', 'N/A')]
+        ]
+        personal_table = Table(personal_data, colWidths=[2*inch, 3*inch])
+        personal_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('BACKGROUND', (1, 0), (1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(personal_table)
+        story.append(Spacer(1, 20))
+        
+        # Income Section
+        story.append(Paragraph("Income", heading_style))
+        income_data = [
+            ['Line 1 - Total Income:', f"${user_data['income']:,.2f}"]
+        ]
+        income_table = Table(income_data, colWidths=[3*inch, 2*inch])
+        income_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('BACKGROUND', (1, 0), (1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(income_table)
+        story.append(Spacer(1, 20))
+        
+        # Deductions Section
+        story.append(Paragraph("Deductions", heading_style))
+        deductions_data = [
+            ['Line 2 - Total Deductions:', f"${tax_result['total_deductions']:,.2f}"],
+            ['Line 3 - Taxable Income:', f"${tax_result['taxable_income']:,.2f}"]
+        ]
+        deductions_table = Table(deductions_data, colWidths=[3*inch, 2*inch])
+        deductions_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('BACKGROUND', (1, 0), (1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('BACKGROUND', (0, 1), (-1, 1), colors.lightyellow),
+            ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold')
+        ]))
+        story.append(deductions_table)
+        story.append(Spacer(1, 20))
+        
+        # Tax Calculation Section
+        story.append(Paragraph("Tax Calculation", heading_style))
+        tax_calc_data = [
+            ['Line 4 - Tax on Taxable Income:', f"${tax_result['federal_tax_before_credits']:,.2f}"]
+        ]
+        
+        if tax_result.get('child_tax_credit', 0) > 0:
+            tax_calc_data.append(['Line 5 - Child Tax Credit:', f"${tax_result['child_tax_credit']:,.2f}"])
+            tax_calc_data.append(['Line 6 - Total Tax After Credits:', f"${tax_result['tax_owed']:,.2f}"])
+        else:
+            tax_calc_data.append(['Line 5 - Total Tax After Credits:', f"${tax_result['tax_owed']:,.2f}"])
+        
+        tax_calc_table = Table(tax_calc_data, colWidths=[3*inch, 2*inch])
+        tax_calc_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('BACKGROUND', (1, 0), (1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('BACKGROUND', (0, -1), (-1, -1), colors.lightyellow),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold')
+        ]))
+        story.append(tax_calc_table)
+        story.append(Spacer(1, 20))
+        
+        # Payments Section
+        story.append(Paragraph("Payments", heading_style))
+        payments_data = [
+            ['Line 7 - Federal Income Tax Withheld:', f"${user_data['withholding']:,.2f}"]
+        ]
+        payments_table = Table(payments_data, colWidths=[3*inch, 2*inch])
+        payments_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('BACKGROUND', (1, 0), (1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(payments_table)
+        story.append(Spacer(1, 20))
+        
+        # Final Result Section
+        story.append(Paragraph("Final Result", heading_style))
+        
+        if tax_result['refund_or_owe'] > 0:
+            result_text = f"REFUND: ${tax_result['refund_or_owe']:,.2f}"
+            result_color = colors.green
+        else:
+            result_text = f"AMOUNT OWED: ${abs(tax_result['refund_or_owe']):,.2f}"
+            result_color = colors.red
+        
+        result_para = Paragraph(f"<b>{result_text}</b>", ParagraphStyle(
+            'Result',
+            parent=styles['Normal'],
+            fontSize=16,
+            textColor=result_color,
+            alignment=1,
+            backColor=colors.lightgrey,
+            borderWidth=2,
+            borderColor=result_color,
+            borderPadding=10
+        ))
+        story.append(result_para)
+        story.append(Spacer(1, 20))
+        
+        # Footer
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=1
+        )
+        
+        story.append(Spacer(1, 30))
+        story.append(Paragraph(f"Generated by AI Tax Return Agent on {dt.datetime.now().strftime('%B %d, %Y at %I:%M %p')}", footer_style))
+        story.append(Spacer(1, 10))
+        story.append(Paragraph("ENHANCED PROTOTYPE VERSION - FOR EDUCATIONAL PURPOSES ONLY", footer_style))
+        story.append(Paragraph("This AI-enhanced form includes predictive analytics and third-party integrations.", footer_style))
+        story.append(Paragraph("Not suitable for actual tax filing. Consult a qualified tax professional.", footer_style))
+        
+        # Build PDF
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+        
+    except ImportError:
+        # If reportlab is not available, raise an exception to trigger fallback
+        raise Exception("PDF generation requires reportlab library")
+
+def download_form_text():
+    """Enhanced fallback function for text download"""
+    user_data = session.get('user_data')
+    tax_result = session.get('tax_result')
+    ml_insights = session.get('ml_insights', {})
+    api_enhancements = session.get('api_enhancements', {})
+    
+    # Check if required data exists
+    if not user_data or not tax_result:
+        return redirect(url_for('index'))
+    
+    # Generate enhanced form content
+    form_content = f"""
+    ENHANCED AI TAX RETURN FORM - {dt.datetime.now().year}
+    =============================================
+    
+    TAXPAYER INFORMATION:
+    Filing Status: {user_data.get('filing_status', 'N/A').replace('_', ' ').title()}
+    Age: {user_data.get('age', 'N/A')}
+    Number of Dependents: {user_data.get('dependents', 'N/A')}
+    State: {user_data.get('state', 'N/A')}
+    
+    INCOME INFORMATION:
+    Total Income: ${user_data.get('income', 0):,.2f}
+    
+    DEDUCTIONS:
+    Total Deductions: ${tax_result.get('total_deductions', 0):,.2f}
+    
+    TAX CALCULATION:
+    Taxable Income: ${tax_result.get('taxable_income', 0):,.2f}
+    Federal Tax Before Credits: ${tax_result.get('federal_tax_before_credits', 0):,.2f}
+    Child Tax Credit: ${tax_result.get('child_tax_credit', 0):,.2f}
+    Federal Tax Owed: ${tax_result.get('tax_owed', 0):,.2f}
+    Tax Withheld: ${user_data.get('withholding', 0):,.2f}
+    
+    TAX RATE INFORMATION:
+    Effective Tax Rate: {tax_result.get('effective_tax_rate', 0)}%
+    Marginal Tax Rate: {tax_result.get('marginal_tax_rate', 0)}%
+    
+    FINAL RESULT:
+    {"Refund Due: $" + str(abs(tax_result.get('refund_or_owe', 0))) if tax_result.get('refund_or_owe', 0) > 0 else "Amount Owed: $" + str(abs(tax_result.get('refund_or_owe', 0)))}
+    
+    Generated on: {dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    Enhanced with AI and third-party API integrations
+    
+    DISCLAIMER: This is a prototype for educational purposes only.
+    """
+    
+    response = make_response(form_content)
+    response.headers['Content-Type'] = 'text/plain'
+    response.headers['Content-Disposition'] = 'attachment; filename=enhanced_tax_return.txt'
+    
+    return response
+
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('index.html', errors=["Page not found. Please start with the tax form."]), 404
