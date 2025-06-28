@@ -237,20 +237,56 @@ def generate_ai_insights(user_data, tax_result):
             'implementation': 'Review investment portfolio for loss opportunities'
         })
     
+    if dependents > 0:
+        planning_suggestions.append({
+            'category': 'Family',
+            'suggestion': 'Maximize child tax credit and dependent care benefits',
+            'potential_savings': min(dependents * 1500, 4500),
+            'priority': 'high',
+            'implementation': 'Ensure proper documentation of dependent expenses'
+        })
+    
+    if income > 75000:
+        planning_suggestions.append({
+            'category': 'Advanced',
+            'suggestion': 'Consider tax-advantaged investment strategies',
+            'potential_savings': min(income * 0.02, 2000),
+            'priority': 'low',
+            'implementation': 'Consult with a financial advisor for tax-efficient investing'
+        })
+    
     # Generate optimization recommendations
     recommendations = []
     if optimization_potential == "high":
         recommendations.append({
             'type': 'deduction_optimization',
-            'description': 'High potential for additional deductions',
-            'estimated_savings': min(income * 0.08, 8000)
+            'description': 'High potential for additional deductions through itemization',
+            'estimated_savings': min(income * 0.08, 8000),
+            'effort': 'medium'
         })
     
     if dependents > 0:
         recommendations.append({
             'type': 'credit_optimization',
             'description': 'Optimize child and dependent care credits',
-            'estimated_savings': min(dependents * 1000, 3000)
+            'estimated_savings': min(dependents * 1000, 3000),
+            'effort': 'low'
+        })
+    
+    if income > 50000 and user_data.get('itemized_deductions', 0) == 0:
+        recommendations.append({
+            'type': 'retirement_planning',
+            'description': 'Consider retirement account contributions to reduce taxable income',
+            'estimated_savings': min(income * 0.03, 3000),
+            'effort': 'low'
+        })
+    
+    if age < 65 and income > 40000:
+        recommendations.append({
+            'type': 'health_savings',
+            'description': 'Health savings account (HSA) contributions if eligible',
+            'estimated_savings': min(income * 0.02, 2000),
+            'effort': 'medium'
         })
     
     return {
