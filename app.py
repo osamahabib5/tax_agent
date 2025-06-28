@@ -290,15 +290,24 @@ def calculate_tax():
         # Store results
         tax_result = {
             'total_income': income,
-            'deduction': deduction,
+            'total_deductions': deduction,
             'taxable_income': taxable_income,
-            'total_tax': total_tax,
-            'child_credit': child_credit,
-            'final_tax': final_tax,
+            'federal_tax_before_credits': total_tax,
+            'child_tax_credit': child_credit,
+            'tax_owed': final_tax,
             'withholding': withholding,
             'refund_or_owe': refund_or_owe,
-            'is_refund': refund_or_owe > 0
+            'is_refund': refund_or_owe > 0,
+            'effective_tax_rate': round((final_tax / income) * 100, 1) if income > 0 else 0,
+            'marginal_tax_rate': 0
         }
+        
+        # Calculate marginal tax rate based on the highest bracket used
+        for min_income, max_income, rate in brackets:
+            if taxable_income > min_income:
+                tax_result['marginal_tax_rate'] = round(rate * 100, 1)
+            if taxable_income <= max_income:
+                break
         
         session['tax_result'] = tax_result
         
