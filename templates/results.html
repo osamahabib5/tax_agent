@@ -141,7 +141,7 @@
         <div class="api-enhancements">
             <h3>📊 Enhanced Tax Information</h3>
             
-            {% if api_enhancements.state_tax_info.state_tax_owed > 0 %}
+            {% if api_enhancements.state_tax_info and api_enhancements.state_tax_info.state_tax_owed > 0 %}
             <div class="enhancement-section">
                 <h4>State Tax Information</h4>
                 <div class="detail-item">
@@ -163,7 +163,7 @@
             </div>
             {% endif %}
             
-            {% if api_enhancements.enhanced_deductions.additional_deductions %}
+            {% if api_enhancements.enhanced_deductions and api_enhancements.enhanced_deductions.additional_deductions %}
             <div class="enhancement-section">
                 <h4>Additional Deduction Opportunities</h4>
                 {% for deduction in api_enhancements.enhanced_deductions.additional_deductions %}
