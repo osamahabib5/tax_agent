@@ -207,6 +207,7 @@ def generate_ai_insights(user_data, tax_result):
             'suggestion': 'Consider itemizing deductions if you have significant medical expenses, mortgage interest, or charitable contributions',
             'potential_savings': min(income * 0.05, 5000),
             'priority': 'high',
+            'effort': 'medium',
             'implementation': 'Gather receipts and documentation for potential deductions'
         })
     
@@ -216,6 +217,7 @@ def generate_ai_insights(user_data, tax_result):
             'suggestion': 'Consider contributing to a retirement account to reduce taxable income',
             'potential_savings': min(income * 0.03, 3000),
             'priority': 'medium',
+            'effort': 'low',
             'implementation': 'Open an IRA or increase 401(k) contributions'
         })
     
@@ -225,6 +227,7 @@ def generate_ai_insights(user_data, tax_result):
             'suggestion': 'Consider health savings account (HSA) contributions if eligible',
             'potential_savings': min(income * 0.02, 2000),
             'priority': 'medium',
+            'effort': 'medium',
             'implementation': 'Check HSA eligibility and contribution limits'
         })
     
@@ -234,6 +237,7 @@ def generate_ai_insights(user_data, tax_result):
             'suggestion': 'Consider tax-loss harvesting to offset capital gains',
             'potential_savings': min(income * 0.01, 1000),
             'priority': 'low',
+            'effort': 'high',
             'implementation': 'Review investment portfolio for loss opportunities'
         })
     
@@ -243,6 +247,7 @@ def generate_ai_insights(user_data, tax_result):
             'suggestion': 'Maximize child tax credit and dependent care benefits',
             'potential_savings': min(dependents * 1500, 4500),
             'priority': 'high',
+            'effort': 'low',
             'implementation': 'Ensure proper documentation of dependent expenses'
         })
     
@@ -252,6 +257,7 @@ def generate_ai_insights(user_data, tax_result):
             'suggestion': 'Consider tax-advantaged investment strategies',
             'potential_savings': min(income * 0.02, 2000),
             'priority': 'low',
+            'effort': 'high',
             'implementation': 'Consult with a financial advisor for tax-efficient investing'
         })
     
@@ -293,6 +299,7 @@ def generate_ai_insights(user_data, tax_result):
         'optimization': {
             'optimization_potential': optimization_potential,
             'optimization_confidence': confidence,
+            'predicted_refund': max(0, tax_result.get('refund_or_owe', 0) + min(income * 0.05, 5000)),
             'recommendations': recommendations
         },
         'audit_risk': {
@@ -486,10 +493,58 @@ def calculate_tax():
         ml_insights = generate_ai_insights(processed_data, tax_result)
         print(f"  AI insights generated: optimization={ml_insights['optimization']['optimization_potential']}, risk={ml_insights['audit_risk']['risk_level']}")
         
+        # Generate sample enhanced deductions data
+        enhanced_deductions = []
+        total_estimated_savings = 0
+        
+        # Add sample deductions based on user data
+        if processed_data.get('itemized_deductions', 0) == 0:
+            enhanced_deductions.append({
+                'type': 'Medical Expenses',
+                'description': 'Medical and dental expenses that exceed 7.5% of adjusted gross income',
+                'potential_deduction': min(income * 0.03, 3000),
+                'tax_savings': min(income * 0.03 * 0.22, 660)  # Assuming 22% tax bracket
+            })
+            total_estimated_savings += min(income * 0.03 * 0.22, 660)
+        
+        if processed_data.get('dependents', 0) > 0:
+            enhanced_deductions.append({
+                'type': 'Child Care Credit',
+                'description': 'Child and dependent care credit for work-related expenses',
+                'potential_deduction': min(processed_data.get('dependents', 0) * 3000, 6000),
+                'tax_savings': min(processed_data.get('dependents', 0) * 600, 1200)
+            })
+            total_estimated_savings += min(processed_data.get('dependents', 0) * 600, 1200)
+        
+        if income > 50000:
+            enhanced_deductions.append({
+                'type': 'Retirement Contributions',
+                'description': 'Traditional IRA or 401(k) contributions to reduce taxable income',
+                'potential_deduction': min(income * 0.05, 6000),
+                'tax_savings': min(income * 0.05 * 0.22, 1320)
+            })
+            total_estimated_savings += min(income * 0.05 * 0.22, 1320)
+        
+        if income > 40000:
+            enhanced_deductions.append({
+                'type': 'Student Loan Interest',
+                'description': 'Student loan interest deduction (up to $2,500)',
+                'potential_deduction': min(2500, income * 0.02),
+                'tax_savings': min(2500 * 0.22, 550)
+            })
+            total_estimated_savings += min(2500 * 0.22, 550)
+        
+        api_enhancements = {
+            'enhanced_deductions': {
+                'additional_deductions': enhanced_deductions,
+                'estimated_savings': total_estimated_savings
+            }
+        }
+        
         # Store enhanced results in session
         session['tax_result'] = tax_result
         session['ml_insights'] = ml_insights
-        session['api_enhancements'] = {}  # Empty for now, can be enhanced later
+        session['api_enhancements'] = api_enhancements
         
         print(f"  Calculation complete: refund/owe = ${refund_or_owe:,.2f}")
         
@@ -497,7 +552,7 @@ def calculate_tax():
                              user_data=processed_data, 
                              tax_result=tax_result,
                              ml_insights=ml_insights,
-                             api_enhancements={})
+                             api_enhancements=api_enhancements)
         
     except Exception as e:
         print(f"  ERROR: {str(e)}")
@@ -824,7 +879,8 @@ def generate_pdf_form(user_data, tax_result, ml_insights=None, api_enhancements=
                         ['Category:', suggestion.get('category', 'General')],
                         ['Suggestion:', suggestion.get('suggestion', 'No suggestion available')],
                         ['Potential Savings:', f"${suggestion.get('potential_savings', 0):,.0f}"],
-                        ['Priority:', suggestion.get('priority', 'Medium').title()]
+                        ['Priority:', suggestion.get('priority', 'Medium').title()],
+                        ['Effort:', suggestion.get('effort', 'Medium').title()]
                     ]
                     sugg_table = Table(sugg_data, colWidths=[1.5*inch, 3.5*inch])
                     sugg_table.setStyle(TableStyle([
